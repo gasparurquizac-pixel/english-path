@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>English Path · B1/B2</title>
+<title>Klevy · Inglés B1/B2</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#f3f5ee;color:#203d34;font:16px system-ui}
@@ -37,11 +37,20 @@ nav button{flex:1}
 footer{font-size:12px;color:#63766a;margin-top:30px}
 @media(max-width:500px){main{padding:16px}.grid{grid-template-columns:1fr}.panel{padding:18px}h1{font-size:23px}}
 </style>
+<meta name="application-name" content="Klevy">
+<meta name="apple-mobile-web-app-title" content="Klevy">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#205b48">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/klevy-180-v1.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/klevy-32-v1.png">
+<link rel="manifest" href="manifest.webmanifest?v=1">
+<style>.klevy-brand{display:flex;align-items:center;gap:11px}.klevy-brand img{border-radius:10px;flex-shrink:0;object-fit:cover}header>div>small{display:block;margin-top:6px}</style>
 </head>
 <body>
 <main>
 <header>
-<div><h1>English Path ✳</h1><small>Un poco cada día.</small></div>
+<div><h1 class="klevy-brand"><img src="icons/klevy-192-v1.png" width="40" height="40" alt="">Klevy</h1><small>Un poco cada día.</small></div>
 <label>Nivel
 <select id="level"><option>B1</option><option>B2</option></select>
 </label>
