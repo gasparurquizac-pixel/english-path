@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>English Path · B1/B2</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f3f5ee;color:#203d34;font:16px system-ui}
+main{max-width:850px;margin:auto;padding:24px}
+header{display:flex;justify-content:space-between;align-items:center;gap:15px}
+h1{font-size:28px;margin:0}
+h2{line-height:1.4}
+p{line-height:1.7}
+small{color:#63766a}
+button,select{font:inherit;border-radius:10px;padding:12px;border:1px solid #c9d4c6;cursor:pointer}
+button{background:white;color:#203d34}
+button:hover{border-color:#286348}
+button:focus-visible,select:focus-visible{outline:3px solid #c88740}
+.primary{background:#286348;color:white;border:0}
+.panel{background:white;padding:25px;border:1px solid #dce3d5;border-radius:18px;margin:22px 0}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.card{text-align:left;padding:22px}
+.card b{display:block;margin-bottom:8px}
+.stats{display:flex;flex-wrap:wrap;gap:12px;margin:20px 0}
+.stats span{background:#e4ebd9;padding:12px;border-radius:10px}
+.options{display:grid;gap:12px;margin:24px 0}
+.options button{text-align:left}
+.correct{background:#dcefd9;border-color:#569a58}
+.wrong{background:#f9e0d8;border-color:#c77b61}
+.feedback{background:#eef2e5;padding:18px;border-radius:12px;margin:20px 0;line-height:1.7}
+.reading{border-left:4px solid #92a67a;padding:16px;background:#f4f6ef}
+nav{display:flex;gap:10px;margin:22px 0}
+nav button{flex:1}
+.progress{height:8px;background:#e4ebd9;border-radius:6px;overflow:hidden}
+.progress div{background:#286348;height:100%}
+footer{font-size:12px;color:#63766a;margin-top:30px}
+@media(max-width:500px){main{padding:16px}.grid{grid-template-columns:1fr}.panel{padding:18px}h1{font-size:23px}}
+</style>
+</head>
+<body>
+<main>
+<header>
+<div><h1>English Path ✳</h1><small>Un poco cada día.</small></div>
+<label>Nivel
+<select id="level"><option>B1</option><option>B2</option></select>
+</label>
+</header>
+<nav>
+<button id="home">Practicar</button>
+<button id="progress">Mi progreso</button>
+</nav>
+<div id="app"></div>
+<footer>
+El progreso se guarda en este navegador si permite almacenamiento local.
+La voz depende de las voces disponibles en tu navegador.
+Estas prácticas no certifican tu nivel.
+</footer>
+</main>
+<script>
+const data={
+B1:{
+"Gramática":[
+["I ___ here since 2020.",
+["live","have lived","am living"],1,
+"Usamos present perfect con since cuando algo empezó en el pasado y continúa ahora: have lived."],
+["If it rains tomorrow, we ___ at home.",
+["will stay","would stay","stayed"],0,
+"Primer condicional: if + presente, will + verbo. Expresa una posibilidad real en el futuro."],
+["This book ___ by a young author.",
+["wrote","was written","has writing"],1,
+"Pasiva en pasado: was/were + participio. El libro fue escrito: was written."]
+],
+"Vocabulario":[
+["Could you ___ my cat this weekend?",
+["look up","look after","look for"],1,
+"Look after significa cuidar. Look up es consultar información; look for significa buscar."],
+["I am very ___ in photography.",
+["interested","interesting","interest"],0,
+"Interested describe cómo te sientes. Interesting describe algo que provoca interés."],
+["We need to ___ a decision.",
+["do","make","give"],1,
+"La combinación habitual es make a decision: tomar una decisión."]
+],
+"Lectura":[
+["Why did Maya join the walking club?",
+["To find a job","To meet people","To win a prize"],1,
+"El texto dice que Maya se sentía sola y se unió al club para conocer gente.",
+"Maya moved to Bristol last year. She worked from home and felt lonely. She joined a walking club to meet people. Now she goes walking every Sunday and has several close friends."],
+["How does Daniel usually travel to work?",
+["By bus","By car","By bike"],2,
+"Normally cycles indica que normalmente va en bicicleta. Solo usa el autobús cuando llueve mucho.",
+"Daniel normally cycles to work because it is cheaper than driving. When it rains heavily, he takes the bus. His office is five kilometres from home."],
+["What should volunteers bring?",
+["Gloves and bags","Water","Tickets"],1,
+"El aviso pide llevar agua. La organización proporciona los guantes y las bolsas.",
+"Join our park clean-up this Saturday at 10 a.m. We will provide gloves and bags. Please bring water and wear comfortable shoes. Everyone is welcome."]
+],
+"Escucha":[
+["What time will they meet?",
+["At six","At half past six","At seven"],1,
+"Half past six significa las seis y media. La película empieza a las siete.",
+"Hi Sam! The film starts at seven, but let us meet outside the cinema at half past six. We can buy tickets together."],
+["What does the customer order?",
+["Tea and cake","Coffee and a sandwich","Coffee and cake"],1,
+"Pide un café negro y un sándwich de queso.",
+"Could I have a black coffee and a cheese sandwich, please? I do not need any sugar."],
+["Why is the train delayed?",
+["Bad weather","A technical problem","A late driver"],1,
+"Due to a technical problem significa debido a un problema técnico.",
+"The train to Oxford is delayed by twenty minutes due to a technical problem. We apologise for the inconvenience."]
+]
+},
+B2:{
+"Gramática":[
+["If I had known, I ___ the meeting.",
+["would attend","would have attended","had attended"],1,
+"Tercer condicional: if + past perfect, would have + participio. Imagina un pasado diferente."],
+["By this time next year, she ___ her degree.",
+["will have finished","will finish","has finished"],0,
+"El futuro perfecto expresa algo que estará terminado antes de un momento futuro: will have finished."],
+["Hardly ___ down when the phone rang.",
+["I had sat","did I sit","had I sat"],2,
+"Cuando hardly inicia esta estructura, se invierten sujeto y auxiliar: Hardly had I sat down when…"]
+],
+"Vocabulario":[
+["The proposal was not financially ___ .",
+["reluctant","feasible","avoidable"],1,
+"Feasible significa viable: que se puede realizar con los recursos disponibles."],
+["Her explanation helped ___ light on the issue.",
+["shed","hold","make"],0,
+"Shed light on significa aclarar un tema o aportar información para comprenderlo."],
+["We should take these effects into ___ .",
+["charge","place","account"],2,
+"Take into account significa tener en cuenta."]
+],
+"Lectura":[
+["What concern does the writer raise?",
+["Remote work is always unproductive","Flexibility can hide pressure to stay available","Offices should close"],1,
+"El autor advierte que trabajar con flexibilidad puede generar presión para responder fuera del horario.",
+"Remote work is often praised for the freedom it offers. Yet that freedom can be misleading. Without clear boundaries, staff may feel obliged to answer messages late at night. The real challenge is whether organisations respect employees' time."],
+["What does the repair café value?",
+["Only speed","Selling new appliances","Sharing knowledge and reducing waste"],2,
+"Los voluntarios reparan objetos y enseñan a los visitantes. Ambos objetivos son importantes.",
+"At the repair café, volunteers explain each step and encourage visitors to try repairs themselves. Keeping objects out of landfill matters, but the organisers believe that confidence and shared knowledge are just as valuable."],
+["What is the writer's attitude to urban trees?",
+["Supportive, with practical reservations","Completely opposed","Uninterested"],0,
+"El autor apoya plantar árboles, pero señala que hace falta planificar y financiar su mantenimiento.",
+"Trees can make cities cooler and more pleasant. However, species must suit the local climate and maintenance needs funding. A good strategy keeps trees healthy rather than simply announcing impressive planting targets."]
+],
+"Escucha":[
+["What does the speaker suggest?",
+["Approve the full budget now","Test a smaller version first","Abandon the proposal"],1,
+"A pilot scheme es una prueba a pequeña escala antes de ampliar un proyecto.",
+"The proposal certainly has potential. However, I would be reluctant to commit the entire budget now. A pilot scheme would let us test our assumptions before scaling up."],
+["What is the speaker implying?",
+["The team needs more time","The deadline is easy","Testing is unnecessary"],0,
+"Al mencionar las ausencias y las pruebas incompletas, expresa dudas sobre cumplir el plazo con la calidad necesaria.",
+"I appreciate how important the launch date is. That said, with two developers away and testing still incomplete, I am not convinced we can deliver the standard our customers expect by Friday."],
+["What changed the speaker's mind?",
+["A cheaper ticket","A shorter programme","An engaging lecture and discussion"],2,
+"La charla cuestionó sus ideas y el debate resultó estimulante: thought-provoking.",
+"I nearly skipped the lecture because the topic sounded rather dry. But the speaker challenged ideas I had taken for granted, and the discussion afterwards was surprisingly thought-provoking."]
+]
+}
+};
+
+const app=document.querySelector("#app");
+const level=document.querySelector("#level");
+let state={answers:0,correct:0,completed:[],level:"B1"};
+try{
+ const saved=JSON.parse(localStorage.getItem("english-path-offline"));
+ if(saved)state={...state,...saved};
+}catch{}
+if(!data[state.level])state.level="B1";
+level.value=state.level;
+let session=null;
+
+function save(){
+ try{localStorage.setItem("english-path-offline",JSON.stringify(state))}catch{}
+}
+function stopVoice(){
+ if("speechSynthesis" in window)speechSynthesis.cancel();
+}
+function speak(text){
+ if(!("speechSynthesis" in window)){
+  alert("La voz no está disponible. Usá la transcripción.");
+  return;
+ }
+ stopVoice();
+ const utterance=new SpeechSynthesisUtterance(text);
+ utterance.lang="en-GB";
+ utterance.rate=.85;
+ speechSynthesis.speak(utterance);
+}
+function home(){
+ stopVoice();
+ session=null;
+ app.innerHTML=`
+ <section class="panel">
+ <small>TU PRÓXIMO PASO · ${state.level}</small>
+ <h2>Small steps. Real progress.</h2>
+ <p>Elegí una habilidad. Cada sesión tiene tres ejercicios
+ con correcciones explicadas en español.</p>
+ <div class="grid">
+ ${Object.keys(data[state.level]).map((name,i)=>`
+ <button class="card" data-type="${name}">
+ <b>${["Aa","✳","▤","♫"][i]} ${name}</b>
+ <small>${state.completed.includes(state.level+":"+name)?
+ "✓ Completada · Volver a practicar":"3 ejercicios · Comenzar →"}</small>
+ </button>`).join("")}
+ </div>
+ </section>`;
+ app.querySelectorAll("[data-type]").forEach(button=>{
+  button.onclick=()=>{
+   session={level:state.level,type:button.dataset.type,index:0,score:0,answered:false};
+   question();
+  };
+ });
+}
+function question(){
+ stopVoice();
+ const s=session;
+ s.answered=false;
+ const q=data[s.level][s.type][s.index];
+ app.innerHTML=`
+ <section class="panel">
+ <small>${s.level} · ${s.type} · ${s.index+1} DE 3</small>
+ <div class="progress" style="margin-top:15px">
+ <div style="width:${s.index/3*100}%"></div>
+ </div>
+ ${s.type==="Lectura"?`<p class="reading" lang="en">${q[4]}</p>`:""}
+ ${s.type==="Escucha"?`
+ <p>Escuchá el audio y elegí la respuesta.</p>
+ <button id="listen" class="primary">♫ Reproducir audio</button>
+ <details style="margin-top:18px">
+ <summary>Ver transcripción</summary>
+ <p lang="en">${q[4]}</p>
+ </details>`:""}
+ <h2 lang="en">${q[0]}</h2>
+ <div class="options">
+ ${q[1].map((answer,i)=>`
+ <button data-answer="${i}" lang="en">
+ ${String.fromCharCode(65+i)}. ${answer}
+ </button>`).join("")}
+ </div>
+ <div id="feedback" aria-live="polite"></div>
+ <button id="back">Salir de la sesión</button>
+ </section>`;
+ if(document.querySelector("#listen")){
+  document.querySelector("#listen").onclick=()=>speak(q[4]);
+ }
+ document.querySelector("#back").onclick=home;
+ app.querySelectorAll("[data-answer]").forEach(button=>{
+  button.onclick=()=>answer(Number(button.dataset.answer));
+ });
+}
+function answer(index){
+ const s=session;
+ if(s.answered)return;
+ s.answered=true;
+ const q=data[s.level][s.type][s.index];
+ const correct=index===q[2];
+ state.answers++;
+ if(correct){state.correct++;s.score++}
+ save();
+ app.querySelectorAll("[data-answer]").forEach(button=>{
+  const n=Number(button.dataset.answer);
+  button.disabled=true;
+  if(n===q[2])button.classList.add("correct");
+  else if(n===index)button.classList.add("wrong");
+ });
+ document.querySelector("#feedback").innerHTML=`
+ <div class="feedback">
+ <b>${correct?"¡Muy bien!":"Una oportunidad para aprender."}</b>
+ <br>${q[3]}
+ </div>
+ <button class="primary" id="next">
+ ${s.index<2?"Siguiente ejercicio →":"Ver resultado →"}
+ </button><br><br>`;
+ document.querySelector("#next").onclick=()=>{
+  if(s.index<2){s.index++;question()}
+  else finish();
+ };
+}
+function finish(){
+ stopVoice();
+ const key=session.level+":"+session.type;
+ if(!state.completed.includes(key))state.completed.push(key);
+ save();
+ app.innerHTML=`
+ <section class="panel">
+ <small>SESIÓN COMPLETADA</small>
+ <h2>${session.score===3?"Great work!":"Keep going!"}</h2>
+ <p>Acertaste <b>${session.score} de 3</b> ejercicios.</p>
+ <div class="feedback">
+ ${session.score===3?
+ "Probá otra habilidad para seguir avanzando.":
+ "Podés repetir la sesión para afianzar las explicaciones. Equivocarse también es aprender."}
+ </div>
+ <button class="primary" id="continue">Continuar →</button>
+ </section>`;
+ document.querySelector("#continue").onclick=home;
+}
+function progress(){
+ stopVoice();
+ session=null;
+ app.innerHTML=`
+ <section class="panel">
+ <h2>Cada paso cuenta.</h2>
+ <div class="stats">
+ <span>${state.answers} respuestas</span>
+ <span>${state.answers?Math.round(state.correct/state.answers*100):0}% correctas</span>
+ <span>${state.completed.length} de 8 sesiones</span>
+ </div>
+ ${["B1","B2"].map(l=>{
+ const n=state.completed.filter(x=>x.startsWith(l+":")).length;
+ return `<h3>Ruta ${l} · ${n}/4</h3>
+ <div class="progress"><div style="width:${n*25}%"></div></div>`;
+ }).join("")}
+ <p>Las estadísticas incluyen los intentos repetidos.
+ Una sesión completada significa que respondiste sus tres ejercicios.</p>
+ <button id="reset">Borrar mi progreso</button>
+ </section>`;
+ document.querySelector("#reset").onclick=()=>{
+  if(confirm("¿Borrar todo el progreso guardado?")){
+   state={answers:0,correct:0,completed:[],level:level.value};
+   save();progress();
+  }
+ };
+}
+level.onchange=()=>{
+ state.level=level.value;
+ save();home();
+};
+document.querySelector("#home").onclick=home;
+document.querySelector("#progress").onclick=progress;
+window.addEventListener("pagehide",stopVoice);
+home();
+</script>
+</body>
+</html>
+<script>
+(()=>{
+const extra={
+B1:{
+"Gramática":[
+["You ___ wear a seat belt in the car.",
+["must","might","would"],0,
+"Must expresa obligación: debés usar el cinturón de seguridad."],
+
+["She is ___ than her brother.",
+["tall","taller","tallest"],1,
+"Para comparar dos personas usamos taller than. Tallest es el superlativo."],
+
+["We ___ dinner when the lights went out.",
+["have","had","were having"],2,
+"El pasado continuo describe una acción en curso interrumpida por otra: were having."],
+
+["There is not ___ milk left.",
+["many","much","a few"],1,
+"Milk es incontable. En una oración negativa usamos much para hablar de cantidad."],
+
+["Have you ___ visited London?",
+["ever","yet","already"],0,
+"Ever en una pregunta sobre experiencias significa alguna vez."],
+
+["I enjoy ___ in the sea.",
+["to swim","swim","swimming"],2,
+"Después de enjoy usamos el verbo con -ing: enjoy swimming."],
+
+["She said she ___ tired.",
+["is","was","has"],1,
+"Al informar en pasado lo que alguien dijo, is suele cambiar a was: She said she was tired."]
+],
+
+"Vocabulario":[
+["I missed the bus, so I arrived ___ .",
+["early","late","fast"],1,
+"Arrive late significa llegar tarde. Miss the bus significa perder el autobús."],
+
+["Could I ___ your pen for a minute?",
+["lend","borrow","owe"],1,
+"Borrow es recibir algo prestado. Lend es prestárselo a otra persona."],
+
+["Please ___ the lights before you leave.",
+["turn off","turn up","turn into"],0,
+"Turn off significa apagar. Turn up significa subir el volumen o la intensidad."],
+
+["I kept the ___ in case I needed to return the shirt.",
+["recipe","receipt","reception"],1,
+"Receipt es el comprobante de compra. Recipe significa receta de cocina."],
+
+["The train was so ___ that I had to stand.",
+["empty","quiet","crowded"],2,
+"Crowded significa lleno de gente. Por eso tuvo que viajar de pie."],
+
+["I need to ___ an appointment with the dentist.",
+["make","do","have got"],0,
+"Make an appointment significa pedir o concertar una cita."],
+
+["We are looking ___ to our holiday.",
+["after","forward","out"],1,
+"Look forward to significa esperar algo con ilusión. Después de to va un sustantivo o un verbo con -ing."]
+],
+
+"Lectura":[
+["Why will the library close early?",
+["There is a public holiday","The heating needs repairs","There are no visitors"],1,
+"El aviso dice que deben reparar la calefacción.",
+"The library will close at 3 p.m. on Thursday because the heating system needs repairs. Normal opening hours will resume on Friday. Books can still be returned through the outside box."],
+
+["What will Emma do on Saturday morning?",
+["Work at the shop","Visit her sister","Go to the market"],0,
+"Ella acepta trabajar por la mañana y piensa visitar a su hermana más tarde.",
+"Hi Alex, I can cover your shift at the shop on Saturday morning. I was planning to visit my sister, but I can do that in the afternoon instead. Emma."],
+
+["What is included in the course price?",
+["A camera","Lunch","Learning materials"],2,
+"Los materiales están incluidos, pero hay que llevar cámara y almuerzo.",
+"Our beginners photography course costs £40. All learning materials are included. Please bring your own camera and a packed lunch. The class starts at 9 a.m."],
+
+["Why did Leo choose the smaller flat?",
+["It was close to work","It had a garden","It was cheaper than all the others"],0,
+"Leo priorizó poder caminar al trabajo. El texto no compara todos los precios.",
+"Leo looked at two flats. One was spacious but an hour from his office. The other was smaller, but he could walk to work in ten minutes. He chose the second one because he wanted more free time."],
+
+["What should guests do if they arrive late?",
+["Wait until morning","Call the number on the door","Enter through a window"],1,
+"Para llegadas después de las diez, el aviso indica llamar al número de la puerta.",
+"Reception closes at 10 p.m. If you arrive after that time, please call the number displayed on the main door. A member of staff will come to let you in."],
+
+["How has Sara changed her shopping habits?",
+["She buys food every day","She never cooks","She plans meals before shopping"],2,
+"Sara ahora prepara un plan semanal y compra solo lo que necesita.",
+"Sara used to buy too much food and throw some away. Now she writes a weekly meal plan before going shopping. She buys only what she needs and has reduced her food waste."],
+
+["When can customers get a refund?",
+["Within fourteen days with the receipt","Whenever they want","Only on the day of purchase"],0,
+"Se acepta la devolución dentro de catorce días con el comprobante y el producto sin usar.",
+"You may return unused items within fourteen days of purchase. Please bring your receipt. Items without a receipt can be exchanged, but we cannot offer a refund."]
+],
+
+"Escucha":[
+["Which platform should passengers use?",
+["Platform two","Platform four","Platform six"],1,
+"El anuncio cambia la salida del andén dos al cuatro.",
+"Attention please. The train to Cambridge will now depart from platform four, instead of platform two."],
+
+["What will the weather be like in the afternoon?",
+["Sunny","Snowy","Rainy"],0,
+"La mañana será lluviosa, pero se espera sol después del mediodía.",
+"Take an umbrella this morning because rain is expected. After midday, the clouds will clear and we should have a sunny afternoon."],
+
+["What does the speaker want to change?",
+["The restaurant","The number of guests","The booking time"],2,
+"Mantiene el restaurante y las cuatro personas; quiere cambiar las siete por las ocho.",
+"Hello, I have a table booked for four people at seven tonight. Could we move the booking to eight? There will still be four of us."],
+
+["What should Ben bring?",
+["Bread","Drinks","Dessert"],1,
+"El anfitrión ya tiene comida y postre. Le pide a Ben bebidas.",
+"Hi Ben! I have bought the food for the barbecue and Anna is making dessert. Could you bring some drinks?"],
+
+["Where is the pharmacy?",
+["Opposite the bank","Inside the station","Next to the cinema"],0,
+"Opposite the bank significa enfrente del banco.",
+"Walk straight ahead and turn left at the traffic lights. The pharmacy is on your right, opposite the bank."],
+
+["Why is the speaker calling?",
+["To cancel a delivery","To order a new product","To report a missing item"],2,
+"La entrega llegó, pero falta el cable de carga.",
+"My order arrived this morning. The headphones are here, but the charging cable is missing. Could you send it to me, please?"],
+
+["What does the teacher ask students to do?",
+["Finish the whole project tonight","Read a chapter before the next lesson","Bring their projects tomorrow"],1,
+"La tarea es leer el capítulo cinco. El proyecto debe entregarse el viernes.",
+"Please read chapter five before our next lesson. You do not need to finish your project tonight. The deadline for that is Friday."]
+]
+},
+
+B2:{
+"Gramática":[
+["I wish I ___ more time to study, but I do not.",
+["have","had","will have"],1,
+"Wish + pasado simple expresa un deseo sobre una situación presente que no es como quisiéramos."],
+
+["You ___ me a ticket; I had already bought one.",
+["must not buy","could not buy","need not have bought"],2,
+"Need not have + participio indica que una acción se realizó, pero era innecesaria."],
+
+["Despite ___ tired, she finished the report.",
+["being","she was","be"],0,
+"Despite va seguido de sustantivo o verbo en -ing. Con una oración completa usaríamos although she was tired."],
+
+["The manager had the report ___ before the meeting.",
+["revise","revised","revising"],1,
+"Have something done expresa que otra persona hace algo por nosotros: had the report revised."],
+
+["If I had accepted that job, I ___ in Madrid now.",
+["will live","had lived","would be living"],2,
+"Condicional mixto: una decisión hipotética del pasado tendría una consecuencia en el presente."],
+
+["She suggested that we ___ the decision.",
+["postpone","postponing","to postpone"],0,
+"Después de suggest that puede usarse la forma base: suggested that we postpone. También es posible should postpone."],
+
+["The proposal, ___ was submitted yesterday, needs revision.",
+["that","which","what"],1,
+"En una relativa explicativa entre comas para una cosa usamos which; that no se usa en esta estructura."]
+],
+
+"Vocabulario":[
+["The researchers must ___ out further tests.",
+["carry","bring","take"],0,
+"Carry out significa realizar o llevar a cabo: carry out tests."],
+
+["We need to meet the ___ by Friday.",
+["border","deadline","ending"],1,
+"Meet a deadline significa cumplir con una fecha límite."],
+
+["Her claim is not supported by reliable ___ .",
+["evidences","evident","evidence"],2,
+"Evidence es incontable y significa pruebas o evidencia. No se pluraliza con -s en este uso."],
+
+["They reached a ___ after both sides made concessions.",
+["compromise","promise","permission"],0,
+"Reach a compromise significa llegar a un acuerdo mediante concesiones mutuas."],
+
+["His account of the accident was rather ___; several details were missing.",
+["thorough","vague","precise"],1,
+"Vague significa impreciso o poco claro. Faltan detalles en su relato."],
+
+["The extra cost may ___ people from applying.",
+["encourage","enable","deter"],2,
+"Deter someone from doing something significa disuadir a alguien de hacer algo."],
+
+["The new evidence calls the original conclusion into ___ .",
+["question","answer","request"],0,
+"Call something into question significa poner algo en duda."]
+],
+
+"Lectura":[
+["What is the main limitation of the study?",
+["It lacked a control group","It took too long","It measured too many variables"],0,
+"Sin un grupo de comparación no se puede atribuir con seguridad la mejora al programa.",
+"Employees reported feeling less stressed after a four-week wellbeing programme. However, everyone in the study took part in the programme, and there was no comparison group. The researchers acknowledged that other changes at work might explain the improvement."],
+
+["What does the writer suggest about discounts?",
+["They always save money","They may encourage unnecessary purchases","They should be banned"],1,
+"Un descuento puede hacer que compremos algo que no necesitábamos y gastemos más.",
+"A discount feels like a saving, but that depends on what you would otherwise have done. Paying less for something you did not need can still leave you worse off. The useful question is whether you would have bought it without the promotion."],
+
+["Why did the museum change its labels?",
+["To reduce printing costs","To remove historical information","To make exhibits easier to understand"],2,
+"Las etiquetas anteriores suponían conocimientos que muchos visitantes no tenían.",
+"Visitors said the labels assumed too much prior knowledge. The museum rewrote them in plain language while keeping the historical detail. Staff now hope that more people will feel confident exploring the collection on their own."],
+
+["What does the writer imply about the bus service?",
+["Reliability matters as well as frequency","More buses alone will solve everything","Passengers prefer unreliable buses"],0,
+"Tener más servicios no basta si las personas no pueden confiar en sus horarios.",
+"The council has promised more frequent buses. Yet passengers often complain less about the scheduled interval than about not knowing whether a bus will turn up. Increasing services will have limited value unless the timetable becomes dependable."],
+
+["What explains the difference between the reviews?",
+["One reviewer did not use the product","The reviewers prioritised different features","The product changed between reviews"],1,
+"Uno valoró la potencia y otro la portabilidad. Sus prioridades explican las opiniones distintas.",
+"One reviewer praised the laptop performance; another criticised its weight. These judgments need not contradict each other. Someone who edits video at a desk may value processing power, while a commuter may care more about portability."],
+
+["What does the author recommend for language learners?",
+["Avoiding all mistakes","Studying only grammar rules","Combining meaningful use with focused practice"],2,
+"El autor propone combinar la comunicación real con práctica específica de puntos débiles.",
+"Conversation exposes learners to real communication, but repeated errors may go unnoticed. Focused practice can address those gaps, though exercises alone rarely build conversational confidence. The strongest approach allows each activity to support the other."],
+
+["What is the writer concerned about?",
+["Attendance being mistaken for engagement","Too many optional activities","A lack of attendance records"],0,
+"El texto distingue estar presente de participar mentalmente y comprender.",
+"Schools can count attendance easily, but presence is not the same as engagement. A student may sit through every lesson without understanding the material. If attendance figures become the only measure of success, deeper problems risk being overlooked."]
+],
+
+"Escucha":[
+["How does the speaker feel about the offer?",
+["Ready to accept unconditionally","Interested but seeking clarification","Certain it is a bad opportunity"],1,
+"Le atrae la oportunidad, pero quiere aclarar las expectativas de viaje antes de decidir.",
+"The role sounds appealing, especially the chance to lead a team. Before I commit, though, I would like a clearer picture of how much travel is expected."],
+
+["What is the speaker doing?",
+["Rejecting all feedback","Promising immediate success","Acknowledging a problem and proposing a response"],2,
+"Reconoce que la incorporación fue confusa y propone simplificar las instrucciones.",
+"The feedback makes it clear that our onboarding process has been confusing. We cannot fix everything overnight, but simplifying the initial instructions would be a sensible first step."],
+
+["What does the speaker imply about the result?",
+["It should be interpreted cautiously","It proves the treatment works for everyone","It was entirely predictable"],0,
+"Los resultados son alentadores, pero la muestra pequeña limita las conclusiones generales.",
+"The improvement is encouraging, certainly. Still, given how few people took part, I would hesitate to draw broad conclusions until we have replicated the study."],
+
+["Why did the speaker choose the later train?",
+["It was cheaper","It allowed more time for a connection","It had fewer passengers"],1,
+"Eligió más margen para el transbordo, aunque el billete costaba un poco más.",
+"The earlier service would have left me just six minutes to change platforms. I booked the later one to give myself some breathing space, even though the fare was slightly higher."],
+
+["What is the speaker saying about the policy?",
+["It should be introduced without changes","It has already failed","Its practical effects need closer examination"],2,
+"La idea parece razonable, pero pide estudiar su efecto real en familias con menos recursos.",
+"On paper, the policy looks reasonable. My concern is how it will affect households with limited savings. We need to look beyond the headline figures before deciding whether it is fair."],
+
+["What caused the misunderstanding?",
+["The deadline was not stated explicitly","The message was sent to the wrong person","The recipient refused to help"],0,
+"El remitente asumió que la fecha estaba clara, pero solo había escrito soon.",
+"I assumed she knew I needed the figures by Thursday. Looking back at my message, though, I had only said soon. I should have been more specific."],
+
+["What does the speaker value most about the course?",
+["Its low price","The opportunity to apply feedback","The absence of difficult tasks"],1,
+"La práctica con comentarios del tutor y una nueva oportunidad para aplicar lo aprendido fue lo más valioso.",
+"The lectures were useful, but what made the difference was trying the techniques myself, getting detailed comments from the tutor, and then having another go."]
+]
+}
+};
+
+for(const l of ["B1","B2"]){
+ for(const type of Object.keys(extra[l])){
+  data[l][type].push(...extra[l][type]);
+ }
+}
+
+if(!state.practice||typeof state.practice!=="object"){
+ state.practice={};
+}
+
+const key=(l,t,i)=>l+":"+t+":"+i;
+
+const count=(l,t)=>data[l][t].filter(
+ (_,i)=>state.practice[key(l,t,i)]
+).length;
+
+const total=()=>Object.values(data).reduce(
+ (n,group)=>n+Object.values(group).reduce(
+  (a,questions)=>a+questions.length,0
+ ),0
+);
+
+const rank=record=>!record?0:record.correct?2:1;
+
+const shuffle=list=>{
+ for(let i=list.length-1;i>0;i--){
+  const j=Math.floor(Math.random()*(i+1));
+  [list[i],list[j]]=[list[j],list[i]];
+ }
+ return list;
+};
+
+home=function(){
+ stopVoice();
+ session=null;
+
+ app.innerHTML=`
+ <section class="panel">
+ <small>TU PRÓXIMO PASO · ${state.level}</small>
+ <h2>Ahora sí: más para practicar.</h2>
+ <p>${total()} ejercicios entre B1 y B2.
+ Sesiones de hasta cinco preguntas: primero las nuevas,
+ después las que necesitás repasar.</p>
+ <div class="grid">
+ ${Object.keys(data[state.level]).map((t,i)=>`
+ <button class="card" data-type="${t}">
+ <b>${["Aa","✳","▤","♫"][i]} ${t}</b>
+ <small>${data[state.level][t].length} ejercicios ·
+ ${count(state.level,t)} practicados · Empezar →</small>
+ </button>`).join("")}
+ </div>
+ </section>`;
+
+ app.querySelectorAll("[data-type]").forEach(button=>{
+  button.onclick=()=>{
+   const type=button.dataset.type;
+   const l=state.level;
+   const ids=shuffle(data[l][type].map((_,i)=>i));
+
+   ids.sort((a,b)=>
+    rank(state.practice[key(l,type,a)])-
+    rank(state.practice[key(l,type,b)])
+   );
+
+   session={
+    level:l,
+    type,
+    ids:ids.slice(0,5),
+    index:0,
+    score:0,
+    answered:false
+   };
+
+   question();
+  };
+ });
+};
+
+question=function(){
+ stopVoice();
+
+ const s=session;
+ const q=data[s.level][s.type][s.ids[s.index]];
+ s.answered=false;
+
+ app.innerHTML=`
+ <section class="panel">
+ <small>${s.level} · ${s.type} ·
+ ${s.index+1} DE ${s.ids.length}</small>
+
+ <div class="progress" style="margin-top:15px">
+ <div style="width:${s.index/s.ids.length*100}%"></div>
+ </div>
+
+ ${s.type==="Lectura"?
+ `<p class="reading" lang="en">${q[4]}</p>`:""}
+
+ ${s.type==="Escucha"?`
+ <p>Escuchá y elegí la respuesta.</p>
+ <button id="listen" class="primary">♫ Reproducir audio</button>
+ <details style="margin-top:18px">
+ <summary>Ver transcripción</summary>
+ <p lang="en">${q[4]}</p>
+ </details>`:""}
+
+ <h2 lang="en">${q[0]}</h2>
+
+ <div class="options">
+ ${q[1].map((a,i)=>`
+ <button data-answer="${i}" lang="en">
+ ${String.fromCharCode(65+i)}. ${a}
+ </button>`).join("")}
+ </div>
+
+ <div id="feedback" aria-live="polite"></div>
+ <button id="back">Salir de la sesión</button>
+ </section>`;
+
+ if(document.querySelector("#listen")){
+  document.querySelector("#listen").onclick=()=>speak(q[4]);
+ }
+
+ document.querySelector("#back").onclick=home;
+
+ app.querySelectorAll("[data-answer]").forEach(button=>{
+  button.onclick=()=>answer(Number(button.dataset.answer));
+ });
+};
+
+answer=function(i){
+ const s=session;
+ if(s.answered)return;
+ s.answered=true;
+
+ const id=s.ids[s.index];
+ const q=data[s.level][s.type][id];
+ const ok=i===q[2];
+
+ state.answers++;
+ if(ok){
+  state.correct++;
+  s.score++;
+ }
+
+ state.practice[key(s.level,s.type,id)]={correct:ok};
+ save();
+
+ app.querySelectorAll("[data-answer]").forEach(button=>{
+  button.disabled=true;
+  const n=Number(button.dataset.answer);
+
+  if(n===q[2])button.classList.add("correct");
+  else if(n===i)button.classList.add("wrong");
+ });
+
+ document.querySelector("#feedback").innerHTML=`
+ <div class="feedback">
+ <b>${ok?"¡Muy bien!":"Una oportunidad para aprender."}</b>
+ <br>${q[3]}
+ </div>
+ <button class="primary" id="next">
+ ${s.index<s.ids.length-1?
+ "Siguiente ejercicio →":"Ver resultado →"}
+ </button><br><br>`;
+
+ document.querySelector("#next").onclick=()=>{
+  if(s.index<s.ids.length-1){
+   s.index++;
+   question();
+  }else{
+   finish();
+  }
+ };
+};
+
+finish=function(){
+ stopVoice();
+ save();
+
+ const s=session;
+
+ app.innerHTML=`
+ <section class="panel">
+ <small>SESIÓN COMPLETADA</small>
+ <h2>${s.score===s.ids.length?"Great work!":"Keep going!"}</h2>
+ <p>Acertaste <b>${s.score} de ${s.ids.length}</b>.</p>
+
+ <div class="feedback">
+ Ya practicaste ${count(s.level,s.type)} de
+ ${data[s.level][s.type].length} ejercicios de
+ ${s.type.toLowerCase()} ${s.level}.
+ La próxima sesión prioriza preguntas nuevas y
+ respuestas que necesitás repasar.
+ </div>
+
+ <button class="primary" id="continue">
+ Elegir otra sesión →
+ </button>
+ </section>`;
+
+ document.querySelector("#continue").onclick=home;
+};
+
+progress=function(){
+ stopVoice();
+ session=null;
+
+ const seen=Object.keys(state.practice).length;
+ const correct=Object.values(state.practice).filter(
+  record=>record.correct
+ ).length;
+
+ app.innerHTML=`
+ <section class="panel">
+ <h2>Cada paso cuenta.</h2>
+
+ <div class="stats">
+ <span>${seen} de ${total()} ejercicios practicados</span>
+ <span>${correct} correctos en su último intento</span>
+ <span>${state.answers} respuestas acumuladas</span>
+ </div>
+
+ ${["B1","B2"].map(l=>`
+ <h3>Ruta ${l}</h3>
+ ${Object.keys(data[l]).map(t=>`
+ <p>${t}: ${count(l,t)} / ${data[l][t].length}</p>
+ <div class="progress">
+ <div style="width:${count(l,t)/data[l][t].length*100}%"></div>
+ </div>`).join("")}
+ `).join("")}
+
+ <p>Las respuestas acumuladas incluyen tu versión anterior.
+ El seguimiento por ejercicio empieza con esta actualización.</p>
+
+ <button id="reset">Borrar mi progreso</button>
+ </section>`;
+
+ document.querySelector("#reset").onclick=()=>{
+  if(confirm("¿Borrar todo tu progreso?")){
+   state.answers=0;
+   state.correct=0;
+   state.completed=[];
+   state.practice={};
+   save();
+   progress();
+  }
+ };
+};
+
+document.querySelector("#home").onclick=home;
+document.querySelector("#progress").onclick=progress;
+
+level.onchange=()=>{
+ state.level=level.value;
+ save();
+ home();
+};
+
+save();
+home();
+})();
+</script>
+<script>
+(()=>{
+if(typeof data==="undefined"||typeof home!=="function")return;
+
+if(Object.values(data).every(group=>
+ Object.values(group).every(questions=>questions.length>=75)
+)){
+ home();
+ return;
+}
+
+const add=(level,type,questions)=>{
+ data[level][type].push(
+  ...questions.slice(0,Math.max(0,75-data[level][type].length))
+ );
+};
+
+const make=(text,correct,wrong1,wrong2,why,passage)=>{
+ const choices=[correct,wrong1,wrong2];
+ const position=[...text].reduce(
+  (n,c)=>n+c.charCodeAt(0),0
+ )%3;
+
+ for(let n=0;n<position;n++){
+  choices.unshift(choices.pop());
+ }
+
+ return [
+  text,choices,position,why,
+  ...(passage?[passage]:[])
+ ];
+};
+
+const people=[
+["Laura","Rome","2019","cooking","cook","bicycle","water","café","Paris","the report","Monday"],
+["Daniel","Lisbon","2020","swimming","swim","printer","rice","station","London","the project","Tuesday"],
+["Sofia","Bristol","2021","painting","paint","phone","flour","library","Madrid","the homework","Wednesday"],
+["David","York","2022","dancing","dance","car","milk","restaurant","Berlin","the presentation","Thursday"],
+["Emma","Leeds","2023","reading","read","washing machine","sugar","bookshop","Dublin","the assignment","Friday"]
+];
+
+const grammar={
+B1:[
+p=>make(
+ `${p[0]} ___ in ${p[1]} since ${p[2]}.`,
+ "has lived","lived","is living",
+ "Con since y una situación que continúa, usamos present perfect: has lived."
+),
+p=>make(
+ `When I called, ${p[0]} ___ .`,
+ "was "+p[3],"has "+p[4],"will "+p[4],
+ "Past continuous: was + verbo con -ing. La actividad estaba en curso cuando llamé."
+),
+p=>make(
+ `If ${p[0]} finishes ${p[9]} early, we ___ for a walk.`,
+ "will go","would go","had gone",
+ "Primer condicional: if + presente, will + verbo."
+),
+p=>make(
+ `If I had more free time, I ___ with ${p[0]} more often.`,
+ "would "+p[4],"will "+p[4],"had "+p[4],
+ "Segundo condicional: if + pasado, would + verbo. Imaginamos una situación presente diferente."
+),
+p=>make(
+ `The ${p[5]} ___ last ${p[10]}.`,
+ "was repaired","has repaired","repairing",
+ "Pasiva en pasado: was + participio. El objeto recibió la reparación."
+),
+p=>make(
+ `This ${p[5]} is ___ than that one.`,
+ "more expensive","most expensive","expensively",
+ "Con than comparamos: more expensive than."
+),
+p=>make(
+ `How ___ ${p[6]} do we need?`,
+ "much","many","a few",
+ "El sustantivo es incontable. Preguntamos How much; How many se usa con plurales contables."
+),
+p=>make(
+ `${p[0]} enjoys ___ after work.`,
+ p[3],"to "+p[4],p[4],
+ "Enjoy va seguido del verbo en -ing."
+),
+p=>make(
+ `When I was a child, I ___ with ${p[0]} every weekend.`,
+ "used to "+p[4],"use to "+p[4],"was used to "+p[4],
+ "Used to + verbo expresa un hábito pasado que ya no necesariamente continúa."
+),
+p=>make(
+ `This is the ${p[7]} ___ I met ${p[0]}.`,
+ "where","who","whose",
+ "Where introduce información sobre el lugar donde ocurrió una acción."
+),
+p=>make(
+ `You ___ park outside the ${p[7]}; it is forbidden.`,
+ "must not","must","do not have to",
+ "Must not indica prohibición. Do not have to significa que no es obligatorio."
+),
+p=>make(
+ `Have you finished ${p[9]} ___?`,
+ "yet","since","ever",
+ "Yet suele ir al final de preguntas con present perfect: ¿ya lo terminaste?"
+),
+p=>make(
+ `We ___ ${p[8]} tomorrow. The tickets are booked.`,
+ "are visiting","visited","have visited",
+ "El presente continuo también expresa planes futuros organizados."
+)
+],
+B2:[
+p=>make(
+ `If ${p[0]} had told me about ${p[9]}, I ___ .`,
+ "would have helped","would help","had helped",
+ "Tercer condicional: if + past perfect, would have + participio. Imagina un pasado diferente."
+),
+p=>make(
+ `If I had accepted the job in ${p[1]}, I ___ there now.`,
+ "would be living","had lived","will live",
+ "Condicional mixto: una decisión hipotética pasada tendría una consecuencia presente."
+),
+p=>make(
+ `Not only ___ ${p[9]} on time, but we also improved its quality.`,
+ "did we finish","we finished","we did finish",
+ "Not only al inicio provoca inversión del auxiliar y el sujeto: did we finish."
+),
+p=>make(
+ `I wish I ___ ${p[9]} yesterday; now it is too late.`,
+ "had finished","have finished","would finish",
+ "Wish + past perfect expresa arrepentimiento por algo del pasado."
+),
+p=>make(
+ `I wish I ___ in ${p[1]} now, rather than at home.`,
+ "were","will be","have been",
+ "Wish + pasado expresa un deseo contrario a la situación presente. Were es habitual en un contexto hipotético."
+),
+p=>make(
+ `The ${p[5]} is believed ___ during the night.`,
+ "to have been stolen","that was stolen","being stolen",
+ "Pasiva de información: is believed + to have been + participio, para un hecho anterior."
+),
+p=>make(
+ `${p[0]} had the ${p[5]} ___ by a technician.`,
+ "repaired","repair","repairing",
+ "Have something done: encargar o recibir un servicio realizado por otra persona."
+),
+p=>make(
+ `Despite ___ exhausted, ${p[0]} finished ${p[9]}.`,
+ "being","was","to be",
+ "Despite va seguido de sustantivo o -ing. Although puede introducir una oración completa."
+),
+p=>make(
+ `It is essential that ${p[0]} ___ present at the meeting in ${p[1]}.`,
+ "be","being","to be",
+ "En el subjuntivo formal, essential that puede ir seguido de la forma base: be."
+),
+p=>make(
+ `No sooner had ${p[0]} arrived in ${p[1]} ___ it began to rain.`,
+ "than","when","that",
+ "La estructura fija es no sooner ... than. Hardly suele combinarse con when."
+),
+p=>make(
+ `The ${p[5]}, ___ was bought last year, has stopped working.`,
+ "which","that","what",
+ "La relativa explicativa entre comas utiliza which para una cosa; no admite that."
+),
+p=>make(
+ `By next ${p[10]}, we ___ ${p[9]}.`,
+ "will have finished","will finishing","have finish",
+ "Futuro perfecto: will have + participio. Algo estará terminado antes de un momento futuro."
+),
+p=>make(
+ `You ___ a ticket to ${p[1]}; I had already bought you one.`,
+ "need not have bought","must not buy","did not need buying",
+ "Need not have + participio: una acción se hizo, pero era innecesaria."
+)
+]
+};
+
+for(const level of ["B1","B2"]){
+ add(
+  level,
+  "Gramática",
+  grammar[level].flatMap(builder=>people.map(builder))
+ );
+}
+
+const vocab={
+B1:[
+["afford","poder pagar","We cannot ___ a new car this year."],
+["avoid","evitar","Try to ___ travelling during rush hour."],
+["improve","mejorar","Daily practice can ___ your English."],
+["notice","notar","Did you ___ the new sign on the door?"],
+["remind","recordar algo a alguien","Please ___ me to call the dentist."],
+["suggest","sugerir","What would you ___ doing this weekend?"],
+["refuse","negarse","You can ___ to answer a personal question."],
+["allow","permitir","They do not ___ dogs inside the restaurant."],
+["repair","reparar","Can someone ___ this broken chair?"],
+["replace","reemplazar","We must ___ the old batteries with new ones."],
+["deliver","entregar","They will ___ the parcel to your home."],
+["complain","quejarse","Customers can ___ about poor service."],
+["apologise","pedir disculpas","I want to ___ for being late."],
+["agree","estar de acuerdo","I ___ with your opinion about the film."],
+["depend","depender","Our plans ___ on the weather."],
+["belong","pertenecer","Does this bag ___ to you?"],
+["deserve","merecer","You ___ a rest after all that work."],
+["encourage","animar a alguien","Good teachers ___ students to ask questions."],
+["borrow","pedir prestado","Could I ___ your umbrella until tomorrow?"],
+["lend","prestar","Could you ___ me your umbrella until tomorrow?"],
+["receipt","comprobante de compra","Keep your ___ if you want to return the item."],
+["journey","trayecto o viaje","The train ___ from home to work takes an hour."],
+["advice","consejo","Could you give me some ___ about studying?"],
+["luggage","equipaje","All my clothes are packed in my ___."],
+["appointment","cita concertada","I have a dental ___ at three oclock."],
+["opportunity","oportunidad","This course is a good ___ to learn new skills."],
+["neighbour","vecino","The person living next door is my ___."],
+["crowded","lleno de gente","The bus was so ___ that there were no empty seats."],
+["reliable","fiable","This clock always shows the correct time; it is ___."],
+["exhausted","agotado","After running the marathon, I felt completely ___."],
+["disappointed","decepcionado","She felt ___ when the concert was cancelled."],
+["available","disponible","Is a double room ___ for tonight?"],
+["convenient","práctico o que viene bien","Would ten oclock be a ___ time to meet?"]
+],
+B2:[
+["acknowledge","reconocer o admitir","The manager should ___ that mistakes were made."],
+["address","abordar un problema","We need to ___ the causes of staff dissatisfaction."],
+["allocate","asignar recursos","The council will ___ more money to public transport."],
+["anticipate","prever","We did not ___ such a large increase in demand."],
+["assess","evaluar","Experts will ___ the damage before repairs begin."],
+["clarify","aclarar","Could you ___ what you mean by flexible hours?"],
+["comply","cumplir una norma","All suppliers must ___ with safety regulations."],
+["convey","transmitir una idea o sentimiento","Her expression seemed to ___ genuine concern."],
+["decline","rechazar una oferta","He decided to ___ the invitation politely."],
+["enhance","mejorar o potenciar","Better lighting can ___ the quality of a photograph."],
+["establish","establecer","First, we need to ___ clear rules for the team."],
+["implement","poner en práctica","The company plans to ___ the new policy next month."],
+["justify","justificar","Can you ___ the additional expense with evidence?"],
+["maintain","mantener","Regular exercise helps you ___ your fitness."],
+["overcome","superar una dificultad","She worked hard to ___ her fear of public speaking."],
+["pursue","perseguir un objetivo","He left his job to ___ a career in music."],
+["reluctant","reacio o poco dispuesto","She was ___ to share her password, so she refused."],
+["feasible","viable","With our limited budget, is this plan financially ___?"],
+["compelling","convincente o cautivador","The lawyer presented ___ evidence supporting the claim."],
+["misleading","engañoso","The advert was ___ because it hid the extra charges."],
+["substantial","considerable","The repairs required a ___ investment of time and money."],
+["temporary","temporal","This is a ___ solution until the permanent system is ready."],
+["vulnerable","vulnerable","Without protection, young plants are ___ to frost."],
+["widespread","generalizado","The storm caused ___ damage across the region."],
+["drawback","desventaja","The main ___ of the flat is its lack of natural light."],
+["outcome","resultado","The final ___ of the negotiations was a new agreement."],
+["insight","comprensión profunda","The interview gave us valuable ___ into her approach."],
+["assumption","suposición","The plan rests on the ___ that prices will remain stable."],
+["evidence","pruebas o evidencia","There is no reliable ___ to support that claim."],
+["awareness","conciencia o conocimiento de un tema","The campaign aims to raise ___ of food waste."],
+["constraint","limitación","A strict time ___ prevented further research."],
+["incentive","incentivo","The bonus gives employees an ___ to meet their targets."],
+["implication","consecuencia o implicación","One ___ of the rule is that fewer people will qualify."]
+]
+};
+
+for(const level of ["B1","B2"]){
+ const list=vocab[level];
+
+ add(level,"Vocabulario",list.flatMap((row,i)=>[
+  make(
+   `¿Qué significa «${row[0]}»?`,
+   row[1],
+   list[(i+7)%list.length][1],
+   list[(i+17)%list.length][1],
+   `${row[0]} significa ${row[1]}. Ejemplo: ${
+    row[2].replace("___",row[0])
+   }`
+  ),
+  make(
+   `Elegí la palabra inglesa que significa «${row[1]}»: ${row[2]}`,
+   row[0],
+   list[(i+7)%list.length][0],
+   list[(i+17)%list.length][0],
+   `La palabra es ${row[0]}. ${
+    row[2].replace("___",row[0])
+   }`
+  )
+ ]));
+}
+
+const contexts=[
+{
+ n:"Olivia",city:"Bath",day:"Monday",
+ time:"9:30",later:"11:00",number:"three",
+ place:"the town hall",other:"the library",
+ reason:"repairs to the heating system",
+ item:"a camera",subject:"photography",
+ topic:"a four-day working week"
+},
+{
+ n:"Lucas",city:"Oxford",day:"Tuesday",
+ time:"10:00",later:"12:30",number:"four",
+ place:"the community centre",other:"the museum",
+ reason:"essential electrical work",
+ item:"a laptop",subject:"design",
+ topic:"remote working"
+},
+{
+ n:"Mia",city:"Exeter",day:"Wednesday",
+ time:"11:15",later:"14:00",number:"five",
+ place:"the sports centre",other:"the school hall",
+ reason:"repairs to a broken water pipe",
+ item:"a notebook",subject:"creative writing",
+ topic:"flexible start times"
+},
+{
+ n:"Ethan",city:"Durham",day:"Thursday",
+ time:"13:00",later:"15:30",number:"six",
+ place:"the arts centre",other:"the college",
+ reason:"replacement of damaged windows",
+ item:"a calculator",subject:"business skills",
+ topic:"online training"
+},
+{
+ n:"Ava",city:"Chester",day:"Friday",
+ time:"14:30",later:"16:00",number:"seven",
+ place:"the theatre",other:"the station café",
+ reason:"a safety inspection",
+ item:"a sketchbook",subject:"drawing",
+ topic:"a staff wellbeing programme"
+}
+];
+
+const passages={
+B1:[
+c=>[
+"Why will the building be closed?",
+c.reason,
+"A lack of visitors",
+"A public holiday",
+`The centre in ${c.city} will be closed on ${c.day} because of ${c.reason}. It will open as usual the next day. You can still contact staff by email.`,
+`La razón del cierre es ${c.reason}. No se anuncia un feriado.`
+],
+c=>[
+"When is the new appointment?",
+c.later,
+c.time,
+"The following morning",
+`${c.n}, your appointment on ${c.day} has moved from ${c.time} to ${c.later}. The date and location remain the same. Please contact us if the new time is unsuitable.`,
+`Moved from ... to ... indica que ${c.time} es el horario anterior y ${c.later} el nuevo.`
+],
+c=>[
+"Where will the event take place?",
+c.other,
+c.place,
+"At a private home",
+`The event on ${c.day} was originally planned for ${c.place}. However, that building is unavailable. We will meet at ${c.other} instead. The starting time remains ${c.time}.`,
+`Instead señala la nueva sede: ${c.other}.`
+],
+c=>[
+"What must participants bring?",
+c.item,
+"Their own lunch",
+"A printed textbook",
+`Our ${c.subject} course in ${c.city} starts on ${c.day}. Please bring ${c.item}. Lunch and printed materials are included in the fee. No previous experience is necessary.`,
+`Bring introduce lo que tenés que llevar: ${c.item}. El almuerzo y los materiales están incluidos.`
+],
+c=>[
+"Which platform should passengers use?",
+`Platform ${c.number}`,
+"Platform two",
+"Platform one",
+`The ${c.time} train to ${c.city} will now leave from platform ${c.number}. It was previously expected at platform two. Please check the displays before boarding.`,
+`Will now leave indica el andén actualizado: ${c.number}.`
+],
+c=>[
+"What does the applicant need?",
+"Availability in the afternoon",
+"Five years of experience",
+"Their own car",
+`A shop in ${c.city} needs an assistant from one to five every ${c.day}. Training is provided, so previous experience is not required. The shop is opposite the bus station.`,
+"El horario de una a cinco exige disponibilidad por la tarde. No se pide experiencia ni auto."
+],
+c=>[
+"What happens if a guest arrives after reception closes?",
+"They should call the number on the door",
+"They must wait until the next day",
+"They should leave without calling",
+`Reception at our ${c.city} hotel closes at ${c.later} on ${c.day}. If you arrive later, please call the number on the main door. A member of staff will let you in.`,
+"El aviso da una alternativa para llegar tarde: llamar al número que figura en la puerta."
+],
+c=>[
+"Why did the group change its plan?",
+"Rain was expected",
+"The café had closed",
+"Their guide was ill",
+`${c.n} and some friends planned a picnic in ${c.city} on ${c.day}. The forecast predicted heavy rain, so they booked a table indoors at ${c.other}. They still plan to meet at ${c.time}.`,
+"El pronóstico de lluvia explica el cambio a un lugar cubierto."
+],
+c=>[
+"What should volunteers bring?",
+"Drinking water",
+"Cleaning gloves",
+"Rubbish bags",
+`Help clean the park in ${c.city} on ${c.day}. Meet at ${c.time}. We will supply gloves and bags, but please bring your own drinking water. Comfortable shoes are recommended.`,
+"Los organizadores proporcionan guantes y bolsas. Cada persona debe llevar agua."
+],
+c=>[
+"Where will the parcel be left?",
+"With a neighbour",
+"Outside in the street",
+"At the station",
+`${c.n}, your parcel will arrive on ${c.day}. As requested, if nobody answers at your home, the driver will leave it with your next-door neighbour. We will put a delivery note through your door.`,
+"Next-door neighbour significa vecino de al lado. La nota de entrega va por debajo de la puerta."
+],
+c=>[
+"What is the purpose of the message?",
+"To ask for a borrowed item back",
+"To sell a new item",
+"To cancel a class",
+`Hi ${c.n}, do you still have the ${c.item.replace("a ","")} I lent you? I need it for my ${c.subject} class on ${c.day}. Could you return it before then? Thanks!`,
+"I lent you y return it indican que la persona quiere recuperar un objeto que prestó."
+],
+c=>[
+"When can customers collect their orders?",
+`After ${c.later}`,
+`Before ${c.time}`,
+"Only the following week",
+`Orders placed before ${c.time} on ${c.day} will be ready for collection after ${c.later} the same day. Please bring your order number. The collection desk is inside ${c.place}.`,
+"Before marca el límite para pedir; after marca desde cuándo se puede retirar."
+],
+c=>[
+"Why does the speaker prefer the new location?",
+"It is easier to reach without a car",
+"It has free meals",
+"It is much bigger",
+`${c.n} moved the class from ${c.place} to ${c.other}. Both rooms are the same size, but the new one is beside a bus stop. This helps learners who do not drive.`,
+"La ventaja es el acceso en transporte público, no el tamaño ni la comida."
+]
+],
+B2:[
+c=>[
+"Why should the results be treated cautiously?",
+"Participation was voluntary, which may have affected the sample",
+"Every employee was selected randomly",
+"There were no positive results",
+`A company in ${c.city} trialled ${c.topic}. Staff who volunteered reported higher satisfaction, but employees who disliked the idea were less likely to participate. The findings may therefore say more about the participants than about the policy itself.`,
+"La autoselección puede sesgar la muestra: quienes aceptaron quizá ya tenían una actitud favorable."
+],
+c=>[
+"What is the main concern about the proposal?",
+"Its benefits may not be shared equally",
+"It has no possible benefits",
+"It will affect every worker in exactly the same way",
+`${c.n} supports ${c.topic} in principle. However, office staff could benefit more easily than colleagues whose roles require a physical presence. Without additional arrangements, the change could widen differences between groups of employees.`,
+"La preocupación es distributiva: el beneficio puede ser desigual según el tipo de trabajo."
+],
+c=>[
+"Why do the reviews reach different conclusions?",
+"The reviewers have different priorities",
+"Only one reviewer tested the service",
+"The service changed ownership",
+`Two reviews of a course in ${c.subject} seem inconsistent. One praises the detailed theory; the other criticises the lack of practical tasks. The first reviewer wanted academic depth, while the second needed skills that could be applied immediately.`,
+"Las opiniones responden a expectativas distintas: profundidad teórica frente a aplicación inmediata."
+],
+c=>[
+"What is implied by the response?",
+"The speaker wants more information before committing",
+"The speaker has already accepted",
+"The speaker rejects any future discussion",
+`${c.n}, the proposal for ${c.topic} is certainly worth exploring. Before we make a commitment, though, I would appreciate clearer estimates of the ongoing costs and the staff time it would require.`,
+"Worth exploring expresa interés; before we make a commitment introduce una condición previa a decidir."
+],
+c=>[
+"Under what condition will funding continue?",
+"The pilot must meet agreed targets",
+"The project only needs positive publicity",
+"The team must spend the entire budget",
+`Funding for the ${c.subject} programme in ${c.city} will initially cover a short pilot. Further support will depend on whether the team meets the participation and learning targets agreed in advance, rather than on how widely the project is advertised.`,
+"La financiación futura depende de objetivos previamente acordados, no de publicidad ni gasto."
+],
+c=>[
+"What does the writer suggest about the data?",
+"Removing names may not fully protect privacy",
+"Anonymous data can never identify anyone",
+"Names are the only identifying information",
+`The ${c.city} project removed names from its published records. Yet each record still included a precise location and a detailed schedule. Combined with other sources, those details might allow individuals to be recognised.`,
+"Varios datos combinados pueden reidentificar a alguien aunque no figure su nombre."
+],
+c=>[
+"What did the organisers try to balance?",
+"Accessibility and depth",
+"Profit and advertising",
+"Speed and physical size",
+`Visitors to the ${c.city} exhibition struggled with specialist terminology. The team rewrote the introductory labels in plain language while retaining detailed explanations for those who wanted them. The aim was to welcome newcomers without reducing the substance.`,
+"Se simplifica la entrada al tema sin eliminar información de fondo: accesibilidad y profundidad."
+],
+c=>[
+"What distinction does the speaker make?",
+"Flexibility is different from constant availability",
+"Flexible hours always reduce workload",
+"Every employee prefers identical hours",
+`During discussions about ${c.topic}, ${c.n} warned that choosing when to work should not mean being reachable at all times. The policy would need explicit limits on messages outside agreed hours if it was to improve wellbeing.`,
+"La flexibilidad requiere límites: poder elegir horarios no implica estar disponible permanentemente."
+],
+c=>[
+"What made the training effective?",
+"Practice followed by feedback and another attempt",
+"The number of hours spent watching videos",
+"The absence of challenging tasks",
+`Participants in the ${c.subject} course in ${c.city} valued the explanations, but said that improvement came mainly from applying the ideas, receiving specific comments, and revising their work. Simply adding more recorded lectures would not reproduce that process.`,
+"El mecanismo de aprendizaje fue aplicar, recibir comentarios y revisar, no solo consumir explicaciones."
+],
+c=>[
+"Why is the environmental claim uncertain?",
+"The whole product lifecycle has not been considered",
+"Transport never affects environmental impact",
+"All reusable items are automatically better",
+`A supplier in ${c.city} advertised reusable containers as the greener choice. However, the comparison covered manufacturing only. Cleaning, transport and the number of times each container would actually be reused had not been included.`,
+"La evaluación está incompleta: faltan limpieza, transporte y cantidad real de reutilizaciones."
+],
+c=>[
+"What is a limitation of the survey?",
+"It may exclude people with different experiences",
+"Its answers were all identical",
+"It included every local resident",
+`An online survey in ${c.city} found strong support for digital-only bookings. Yet it was promoted through the booking website itself. People unable or unwilling to use that site were unlikely to encounter the survey.`,
+"El canal de reclutamiento excluye justamente a quienes podrían tener dificultades con la web."
+],
+c=>[
+"What can be concluded from the evidence?",
+"The association alone does not establish causation",
+"The policy certainly caused the improvement",
+"Other explanations have been ruled out",
+`After ${c.topic} was introduced in ${c.city}, staff absence fell. The organisation credited the policy, although the same period also brought a new manager and changes to workload. No comparison with an unchanged team was made.`,
+"Que dos cambios coincidan no prueba causalidad. Hay otras explicaciones y falta comparación."
+],
+c=>[
+"What is the speaker recommending?",
+"Planning for a range of plausible outcomes",
+"Treating one forecast as a guarantee",
+"Ignoring all numerical estimates",
+`The forecast for the ${c.city} project gives a useful central estimate. However, ${c.n} argues that decisions should also be tested against lower demand and higher costs. A plan that works only if every assumption is correct is too fragile.`,
+"Sugiere analizar escenarios alternativos y la solidez del plan ante cambios en sus supuestos."
+]
+]
+};
+
+for(const level of ["B1","B2"]){
+ for(const type of ["Lectura","Escucha"]){
+  const offset=type==="Escucha"?2:0;
+
+  const questions=passages[level].flatMap(builder=>
+   contexts.map((_,j)=>{
+    const original=contexts[(j+offset)%contexts.length];
+
+    const context=type==="Escucha"?{
+     ...original,
+     n:["Noah","Isla","Leo","Grace","Jack"][j],
+     city:["Reading","Norwich","Lincoln","Lancaster","Winchester"][j],
+     day:["Saturday","Sunday","Friday","Tuesday","Monday"][j],
+     time:["8:15","9:45","12:00","14:15","15:00"][j],
+     later:["10:30","12:00","14:30","16:00","17:30"][j]
+    }:original;
+
+    const row=builder(context);
+
+    const prefix=type==="Escucha"?
+     `You hear the following message about ${context.city}. `:"";
+
+    return make(
+     `${row[0]} [${context.city} · ${type}]`,
+     row[1],row[2],row[3],row[5],
+     prefix+row[4]
+    );
+   })
+  );
+
+  add(level,type,questions);
+ }
+}
+
+const previousHome=home;
+
+home=function(){
+ previousHome();
+
+ const paragraph=app.querySelector?
+  app.querySelector(".panel > p"):null;
+
+ if(paragraph){
+  paragraph.textContent=
+   "600 actividades disponibles: las 80 preguntas anteriores y "+
+   "520 variantes generadas a partir de estructuras, vocabulario "+
+   "y situaciones. Algunas practican el mismo patrón con otros "+
+   "datos. Las sesiones priorizan lo que todavía no hiciste.";
+ }
+};
+
+document.querySelector("#home").onclick=home;
+
+level.onchange=()=>{
+ state.level=level.value;
+ save();
+ home();
+};
+
+save();
+home();
+})();
+</script>
