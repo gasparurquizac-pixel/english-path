@@ -338,8 +338,8 @@ document.querySelector("#progress").onclick=progress;
 window.addEventListener("pagehide",stopVoice);
 home();
 </script>
-</body>
-</html>
+
+
 <script>
 (()=>{
 const extra={
@@ -1483,3 +1483,595 @@ save();
 home();
 })();
 </script>
+
+<script>
+(()=>{
+if(window.englishPath2000)return;
+window.englishPath2000=true;
+const make=(prompt,correct,a,b,why,topic,passage='',audio='')=>{
+const options=[correct,a,b];
+const rotation=[...prompt].reduce((n,c)=>n+c.charCodeAt(0),0)%3;
+for(let i=0;i<rotation;i++)options.unshift(options.pop());
+return [prompt,options,rotation,why,passage,{topic,audio}];
+};
+const people=[
+{n:'Amelia',city:'Edinburgh',item:'tablet',job:'designer',activity:'writing',base:'write',thing:'the proposal',day:'Monday'},
+{n:'Henry',city:'Manchester',item:'camera',job:'engineer',activity:'running',base:'run',thing:'the contract',day:'Tuesday'},
+{n:'Isabella',city:'Belfast',item:'bicycle',job:'nurse',activity:'cooking',base:'cook',thing:'the application',day:'Wednesday'},
+{n:'Oliver',city:'Cardiff',item:'computer',job:'teacher',activity:'painting',base:'paint',thing:'the schedule',day:'Thursday'},
+{n:'Charlotte',city:'Glasgow',item:'phone',job:'journalist',activity:'swimming',base:'swim',thing:'the summary',day:'Friday'}
+];
+const G=(topic,why,build)=>p=>{const x=build(p);return make(x[0],x[1],x[2],x[3],why,topic)};
+const grammar={B1:[
+G('Artículos','Usamos a o an ante una profesión: an antes de un sonido vocálico y a antes de un sonido consonante.',p=>[`${p.n} works as ___ ${p.job} in ${p.city}.`,p.job==='engineer'?'an':'a',p.job==='engineer'?'a':'an','the a']),
+G('Artículos','Usamos an antes de un sonido vocálico, como en an interview.',p=>[`${p.n} has ___ interview on ${p.day}.`,'an','a','some']),
+G('Preposiciones de tiempo','Usamos on con los días de la semana.',p=>[`The ${p.job} is available ___ ${p.day}.`,'on','in','at']),
+G('Preposiciones de tiempo','Usamos since para el punto de inicio y for para la duración.',p=>[`${p.n} has worked in ${p.city} ___ three years.`,'for','since','during of']),
+G('Preposiciones de lugar','At se usa para un punto concreto: at the entrance.',p=>[`Meet the ${p.job} ___ the entrance to the building.`,'at','on','into']),
+G('Cantidad','A few acompaña sustantivos contables plurales y significa algunos.',p=>[`${p.n} has ___ questions about ${p.thing}.`,'a few','a little','much']),
+G('Cantidad','A little acompaña un sustantivo incontable: time.',p=>[`We have ___ time before the train to ${p.city} leaves.`,'a little','a few','many']),
+G('Cantidad','Too much + incontable significa una cantidad excesiva.',p=>[`${p.n} spends ___ money on equipment.`,'too much','too many','a few']),
+G('Consejos y obligación','Should + verbo sirve para aconsejar.',p=>[`You ___ check the details of ${p.thing}; that is my advice.`,'should','must to','ought']),
+G('Consejos y obligación','Do not have to expresa ausencia de obligación; no significa prohibición.',p=>[`You ___ bring your ${p.item}; we provide all the equipment.`,'do not have to','must not','cannot']),
+G('Posibilidad','Might expresa una posibilidad, sin certeza.',p=>[`${p.n} ___ be in ${p.city}, but I am not sure.`,'might','must to','has']),
+G('Hábitos y acciones actuales','El presente simple expresa hábitos. He/she lleva -s.',p=>[`${p.n} usually ___ ${p.thing} before lunch.`,'checks','is check','checking']),
+G('Hábitos y acciones actuales','At the moment señala una acción en curso: is + -ing.',p=>[`${p.n} ___ on ${p.thing} at the moment.`,'is working','work','has work']),
+G('Pasado simple y perfecto','Con yesterday y un hecho terminado usamos pasado simple.',p=>[`${p.n} ___ ${p.thing} yesterday.`,'finished','has finished','finishes']),
+G('Pasado simple y perfecto','Present perfect con never habla de una experiencia hasta ahora.',p=>[`${p.n} ___ never visited ${p.city} before.`,'has','did','is']),
+G('Planes y predicciones','Going to puede predecir a partir de evidencia presente.',p=>[`Look at those dark clouds over ${p.city}! It ___ rain.`,'is going to','going','has to be']),
+G('Planes y predicciones','Will permite tomar una decisión en el momento de hablar.',p=>[`The ${p.job} is calling. I ___ answer the phone.`,'will','did','have']),
+G('Comparativos y superlativos','El superlativo suele llevar the y compara con todo un grupo.',p=>[`This is ___ expensive ${p.item} in the shop.`,'the most','more','the more']),
+G('Comparativos y superlativos','As + adjetivo + as compara igualdad.',p=>[`My ${p.item} is as useful ___ yours.`,'as','than','that']),
+G('Infinitivo y gerundio','Decide va seguido de to + verbo.',p=>[`${p.n} decided ___ a new ${p.item}.`,'to buy','buying','buy']),
+G('Infinitivo y gerundio','Después de una preposición, usamos -ing: interested in learning.',p=>[`${p.n} is interested in ___ about ${p.city}.`,'learning','to learn','learn']),
+G('Infinitivo y gerundio','Would like va seguido de to + verbo.',p=>[`I would like ___ with the ${p.job}.`,'to speak','speaking','speak']),
+G('Oraciones relativas','Who se refiere a una persona.',p=>[`The ${p.job} ___ helped me was very kind.`,'who','which','where']),
+G('Oraciones relativas','Whose indica posesión: la persona cuyo objeto…',p=>[`I met the person ___ ${p.item} was missing.`,'whose','who','which']),
+G('Estilo indirecto','En preguntas indirectas usamos orden afirmativo: where the station is.',p=>[`Could you tell me where the station in ${p.city} ___?`,'is','is it','does']),
+G('Estilo indirecto','Ask someone to + verbo sirve para transmitir una petición.',p=>[`The ${p.job} asked me ___ outside.`,'to wait','waiting','wait']),
+G('Conectores','Although introduce una oración que contrasta con la principal.',p=>[`___ ${p.n} was tired, the work was completed.`,'Although','Despite','Because of']),
+G('Conectores','Because introduce una oración que explica la causa.',p=>[`${p.n} stayed home ___ the weather in ${p.city} was terrible.`,'because','because of','despite']),
+G('So y such','Such a + adjetivo + sustantivo singular: such a helpful person.',p=>[`The ${p.job} was ___ helpful person that we wrote a thank-you note.`,'such a','so','such']),
+G('Too y enough','Enough se coloca después del adjetivo: old enough.',p=>[`This ${p.item} is not reliable ___ for daily use.`,'enough','too','very']),
+G('Question tags','Una afirmación con is lleva una coletilla negativa: is not o su contracción, seguida del pronombre.',p=>[`${p.n} is the new ${p.job}, ___?`,['Henry','Oliver'].includes(p.n)?"isn’t he":"isn’t she",['Henry','Oliver'].includes(p.n)?"doesn’t he":"doesn’t she",['Henry','Oliver'].includes(p.n)?"hasn’t he":"hasn’t she"]),
+G('Condicional cero','El condicional cero describe resultados habituales: if + presente, presente.',p=>[`If you press this button on the ${p.item}, it ___.`,'switches off','would switch off','had switched off']),
+G('Segundo condicional','If I were you es una fórmula para dar consejo.',p=>[`If I ___ you, I would contact the ${p.job}.`,'were','am','will be']),
+G('Voz pasiva','La pasiva presente se construye con is/are + participio.',p=>[`This type of ${p.item} ___ in several countries.`,'is sold','sells it','is sell']),
+G('Used to','La pregunta con did usa use to, sin -d.',p=>[`Did ${p.n} ___ live in ${p.city}?`,'use to','used to','using to'])
+],B2:[
+G('Inversión','Never before al principio requiere inversión: have I seen.',p=>[`Never before ___ such a detailed version of ${p.thing}.`,'have I seen','I have seen','I saw have']),
+G('Inversión','Only after una expresión inicial requiere inversión en la oración principal.',p=>[`Only after reading ${p.thing} ___ the problem.`,'did we understand','we understood','we did understood']),
+G('Inversión','Under no circumstances + inversión expresa una prohibición enfática.',p=>[`Under no circumstances ___ the ${p.item} unattended.`,'should you leave','you should leave','you leave should']),
+G('Condicionales avanzados','Unless significa if not; la subordinada suele ir en presente.',p=>[`Unless ${p.n} ___ soon, we will miss the train.`,'arrives','will arrive','would arrive']),
+G('Condicionales avanzados','Provided that introduce una condición, normalmente seguida de presente para el futuro.',p=>[`You may borrow my ${p.item} provided that you ___ it tomorrow.`,'return','will returning','would returned']),
+G('Condicionales avanzados','Should + sujeto + verbo puede reemplazar if en una condición formal.',p=>[`___ you need further details about ${p.thing}, contact us.`,'Should','Would','Had']),
+G('Condicionales avanzados','Had + sujeto + participio reemplaza if + past perfect.',p=>[`Had ${p.n} ___ earlier, there would have been enough time.`,'arrived','arrive','arriving']),
+G('Condicionales mixtos','Una situación general hipotética puede explicar un resultado pasado.',p=>[`If ${p.n} were more organised, the deadline for ${p.thing} ___ yesterday.`,'would not have been missed','will not be missed','would not missed']),
+G('Deseos y arrepentimientos','If only + past perfect expresa un arrepentimiento pasado.',p=>[`If only I ___ a copy of ${p.thing} before deleting it!`,'had saved','have saved','would save']),
+G('Deseos y arrepentimientos','Wish + would puede expresar deseo de que cambie una conducta.',p=>[`I wish the ${p.job} ___ interrupting me; it is so annoying.`,'would stop','has stopped','to stop']),
+G('Preferencias','Would rather + otra persona + pasado expresa una preferencia sobre su conducta.',p=>[`I would rather ${p.n} ___ ${p.thing} tomorrow, not today.`,'submitted','submits','will submit']),
+G('Preferencias','It is time + sujeto + pasado expresa que algo ya debería hacerse.',p=>[`It is time we ___ the ${p.item}; it has been broken for weeks.`,'replaced','replace','will replace']),
+G('Modales perfectos','Must have + participio expresa una deducción fuerte sobre el pasado.',p=>[`${p.n} knew every detail of ${p.thing}; someone ___ the full document.`,'must have shared','must share tomorrow','must to have shared']),
+G('Modales perfectos','Cannot have + participio expresa una deducción negativa pasada.',p=>[`${p.n} was abroad all week, so the meeting in ${p.city} ___ attended in person by ${p.n}.`,'cannot have been','must have being','cannot being']),
+G('Modales perfectos','Should have + participio critica una acción que era aconsejable en el pasado.',p=>[`You ___ the ${p.item} before buying it; now it does not work.`,'should have tested','should test yesterday','should had tested']),
+G('Pasiva avanzada','Se usa to be + participio después de needs cuando algo requiere una acción.',p=>[`${p.thing[0].toUpperCase()+p.thing.slice(1)} needs ___ before publication.`,'to be checked','to checked','be checking']),
+G('Pasiva avanzada','La pasiva con -ing es being + participio.',p=>[`${p.n} dislikes ___ what to do by strangers.`,'being told','be told','telling them']),
+G('Pasiva avanzada','Reported + to have + participio se refiere a un hecho anterior.',p=>[`The ${p.job} is reported ___ ${p.city} last week.`,'to have left','to leaving','that left']),
+G('Participios','Having + participio sitúa una acción antes de otra, con el mismo sujeto.',p=>[`___ ${p.thing}, ${p.n} sent it to the manager.`,'Having checked','Have checked','Had checking']),
+G('Participios','El participio pasado puede introducir una relativa reducida pasiva.',p=>[`The ${p.item} ___ in the window belongs to ${p.n}.`,'displayed','displaying it','was displayed is']),
+G('Relativas avanzadas','Whom se usa tras una preposición para una persona, en estilo formal.',p=>[`The ${p.job} with ___ I spoke was helpful.`,'whom','whose','which']),
+G('Relativas avanzadas','Whose puede expresar posesión en una relativa.',p=>[`The company ___ ${p.item} won the award is based in ${p.city}.`,'whose','which','whom']),
+G('Relativas avanzadas','Lo que se refiere a toda la oración previa se expresa con which.',p=>[`${p.n} completed ${p.thing} early, ___ surprised everyone.`,'which','what','that it']),
+G('Énfasis','Una oración hendida con What ... was destaca una acción.',p=>[`What ${p.n} needed most ___ a quiet place to work.`,'was','were to','did']),
+G('Énfasis','It was ... who/that destaca la persona que realizó la acción.',p=>[`It was the ${p.job} ___ first noticed the error.`,'who','which','whose']),
+G('Comparaciones avanzadas','The + comparativo ... the + comparativo expresa cambios relacionados.',p=>[`The more carefully you check ${p.thing}, ___ mistakes you will miss.`,'the fewer','the less of','fewer than']),
+G('Comparaciones avanzadas','No longer significa que una situación ya no continúa.',p=>[`${p.n} ___ works as a ${p.job}; that job ended last year.`,'no longer','not longer','any longer does']),
+G('Concesión','Even though introduce una oración de contraste.',p=>[`___ ${p.thing} was incomplete, it was still useful.`,'Even though','In spite of','Despite of']),
+G('Concesión','Despite the fact that permite introducir una oración completa tras despite.',p=>[`Despite the fact ___ the ${p.item} was expensive, it sold well.`,'that','which','of']),
+G('Causa y consecuencia','Owing to va seguido de sustantivo o -ing.',p=>[`The meeting in ${p.city} was cancelled owing to ___ .`,'staff shortages','staff were absent','because of staff']),
+G('Futuro continuo','Will be + -ing describe una acción en curso en un momento futuro.',p=>[`At this time tomorrow, ${p.n} ___ to ${p.city}.`,'will be travelling','will travelling','will have travel']),
+G('Futuro perfecto continuo','Will have been + -ing expresa duración hasta un punto futuro.',p=>[`By next June, ${p.n} ___ as ${p.job==='engineer'?'an':'a'} ${p.job} for ten years.`,'will have been working','will working','will have working']),
+G('Estilo indirecto avanzado','Deny va seguido de -ing cuando se niega haber realizado una acción.',p=>[`The ${p.job} denied ___ ${p.thing} without permission.`,'changing','to change','change']),
+G('Estilo indirecto avanzado','Warn someone not to + verbo transmite una advertencia negativa.',p=>[`They warned ${p.n} ___ the damaged ${p.item}.`,'not to use','to not using','not use']),
+G('Gerundio e infinitivo','Remember doing significa recordar una acción ya realizada.',p=>[`I remember ___ ${p.thing}; I can clearly recall sending it yesterday.`,'sending','to send','send'])
+]};
+for(const level of ['B1','B2'])data[level]['Gramática'].push(...grammar[level].flatMap(f=>people.map(f)));
+const vocabulary={B1:[
+['accommodation','alojamiento','a place where you can stay overnight','We booked cheap ___ near the station.','Viajes'],
+['destination','destino','the place someone is travelling to','Our final ___ is a small island.','Viajes'],
+['reservation','reserva','an arrangement to keep a room or table for someone','I made a hotel ___ for two nights.','Viajes'],
+['passport','pasaporte','an official document used for international travel','Show your ___ at the border.','Viajes'],
+['itinerary','itinerario','a plan showing the stages of a journey','Our ___ includes three cities in five days.','Viajes'],
+['departure','salida de un transporte','the act of leaving a place at the start of a journey','Check the train ___ time on the screen.','Transporte'],
+['platform','andén','the area beside a railway track where passengers wait','The train leaves from ___ six.','Transporte'],
+['fare','tarifa de transporte','the price paid to travel on public transport','The bus ___ is cheaper with a student card.','Transporte'],
+['aisle','pasillo entre asientos','the passage between rows of seats','I would prefer a seat next to the ___.','Transporte'],
+['delay','demora','a period when something happens later than expected','There was a two-hour ___ before take-off.','Transporte'],
+['headache','dolor de cabeza','pain in your head','I have a terrible ___ and need to rest.','Salud'],
+['prescription','receta médica','a written instruction from a doctor for medicine','You need a ___ to buy this medicine.','Salud'],
+['patient','paciente','a person receiving medical treatment','The doctor examined the ___ carefully.','Salud'],
+['pharmacy','farmacia','a shop where medicines are prepared or sold','I bought the medicine at the ___.','Salud'],
+['symptom','síntoma','a physical sign that may indicate an illness','A high temperature can be a ___ of an infection.','Salud'],
+['salary','sueldo','a fixed amount paid regularly for work','The job offers a good monthly ___.','Trabajo'],
+['shift','turno de trabajo','a scheduled period during which someone works','My evening ___ starts at six.','Trabajo'],
+['colleague','compañero de trabajo','a person you work with','A ___ from my office helped with the report.','Trabajo'],
+['qualification','titulación o acreditación','an official achievement showing training or ability','This position requires a teaching ___.','Trabajo'],
+['interview','entrevista','a formal meeting to assess someone for a job','My job ___ is on Monday morning.','Trabajo'],
+['discount','descuento','a reduction in the usual price','Students get a ten percent ___ on tickets.','Compras'],
+['bargain','compra a muy buen precio','something bought for less than its usual value','At half its normal price, the coat was a ___.','Compras'],
+['refund','reembolso','money returned after a purchase is cancelled or returned','The shop gave me a ___ for the broken lamp.','Compras'],
+['warranty','garantía de producto','a promise to repair or replace a faulty product for a period','The laptop comes with a two-year ___.','Compras'],
+['budget','presupuesto','the amount of money available for a particular purpose','We have a limited ___ for the wedding.','Compras'],
+['ingredient','ingrediente','one of the foods used to make a dish','Flour is an important ___ in bread.','Alimentación'],
+['portion','porción','an amount of food served to one person','The restaurant serves a generous ___ of pasta.','Alimentación'],
+['leftovers','sobras de comida','food remaining after a meal','We ate yesterday’s ___ for lunch.','Alimentación'],
+['recipe','receta de cocina','instructions for preparing a dish','This cake ___ uses three eggs.','Alimentación'],
+['allergy','alergia','a condition in which the body reacts badly to a substance','Tell the waiter about your peanut ___.','Alimentación'],
+['get on with','llevarse bien con','to have a friendly relationship with someone','I ___ my new flatmate very well.','Phrasal verbs'],
+['carry on','continuar','to continue an activity','Please ___ working while I answer the phone.','Phrasal verbs'],
+['give up','dejar de hacer algo','to stop a habit or activity','He decided to ___ smoking for his health.','Phrasal verbs'],
+['put off','posponer','to delay an event until a later time','We need to ___ the meeting until next week.','Phrasal verbs'],
+['run out of','quedarse sin','to have no more of something left','We might ___ milk before the shops open.','Phrasal verbs']
+],B2:[
+['accountability','responsabilidad de rendir cuentas','the obligation to explain decisions and accept responsibility','Clear ownership improves ___ when projects go wrong.','Inglés profesional'],
+['benchmark','punto de referencia','a standard used to compare performance','We use last year’s results as a ___.','Inglés profesional'],
+['stakeholder','parte interesada','a person or group affected by a decision or project','Each ___ should be consulted before the change.','Inglés profesional'],
+['turnover','rotación de personal','the rate at which employees leave and are replaced','High staff ___ made it hard to build an experienced team.','Inglés profesional'],
+['workload','carga de trabajo','the amount of work a person is expected to do','Her ___ increased when two colleagues left.','Inglés profesional'],
+['allegation','acusación aún no probada','a statement accusing someone of wrongdoing before it is proved','The company denied the ___ of fraud.','Inglés formal'],
+['disclosure','revelación de información','the act of making previously private information known','The contract requires ___ of any financial conflicts.','Inglés formal'],
+['consent','consentimiento','permission given freely after understanding what is involved','The researchers obtained informed ___ from participants.','Inglés formal'],
+['compliance','cumplimiento normativo','the act of following laws or official requirements','The audit checked ___ with safety regulations.','Inglés formal'],
+['liability','responsabilidad legal','legal responsibility for damage or loss','The contract limits the supplier’s ___ for delays.','Inglés formal'],
+['get across','transmitir una idea con claridad','to communicate an idea so that it is understood','The speaker struggled to ___ the main point.','Phrasal verbs avanzados'],
+['put up with','tolerar','to accept an unpleasant situation or behaviour','I cannot ___ the constant interruptions any longer.','Phrasal verbs avanzados'],
+['come up with','idear o proponer','to produce an idea or solution','We need to ___ a practical solution.','Phrasal verbs avanzados'],
+['look into','investigar','to examine a situation to discover more information','The manager promised to ___ the complaint.','Phrasal verbs avanzados'],
+['rule out','descartar una posibilidad','to exclude something as a possible explanation or option','The evidence allows us to ___ that explanation.','Phrasal verbs avanzados'],
+['encryption','cifrado','the process of converting data into a coded form','The app uses ___ to protect private messages.','Tecnología'],
+['bandwidth','capacidad de transmisión de datos','the amount of data a connection can carry over time','Video calls require more ___ than plain text messages.','Tecnología'],
+['breach','vulneración de seguridad','an incident involving unauthorised access to protected data','The company reported a data ___ after customer records were exposed.','Tecnología'],
+['compatibility','compatibilidad','the ability of systems to work together','Check the software’s ___ with your operating system.','Tecnología'],
+['glitch','fallo técnico menor','a small and usually temporary technical fault','A ___ made the screen freeze for a few seconds.','Tecnología'],
+['biodiversity','biodiversidad','the variety of living organisms in an area','Protecting different habitats helps preserve ___.','Ambiente y sostenibilidad'],
+['emissions','emisiones','gases or particles released into the atmosphere','The factory plans to cut carbon ___.','Ambiente y sostenibilidad'],
+['conservation','conservación','the protection and careful management of nature','The charity supports the ___ of endangered species.','Ambiente y sostenibilidad'],
+['renewable','renovable','naturally replenished rather than permanently used up','Wind is a ___ source of energy.','Ambiente y sostenibilidad'],
+['depletion','agotamiento de recursos','the reduction of a resource through continued use','Excessive pumping causes the ___ of groundwater reserves.','Ambiente y sostenibilidad'],
+['bias','sesgo','a tendency that unfairly favours one view or group','The report examined possible political ___ in the coverage.','Medios e información'],
+['coverage','cobertura informativa','the reporting of an event by media organisations','The election received extensive television ___.','Medios e información'],
+['credibility','credibilidad','the quality of being believable and worthy of trust','The false quotation damaged the journalist’s ___.','Medios e información'],
+['endorsement','respaldo público','a public statement of support or approval','The campaign gained an ___ from a respected athlete.','Medios e información'],
+['headline','titular','the title of a news story','The ___ attracted attention but did not reflect the full article.','Medios e información'],
+['ambiguity','ambigüedad','the possibility of more than one interpretation','The unclear wording created ___ about the deadline.','Argumentación'],
+['inference','inferencia','a conclusion drawn from evidence rather than directly stated','Her explanation was an ___ based on the available clues.','Argumentación'],
+['scepticism','escepticismo','a questioning attitude towards claims without sufficient support','The extraordinary claim was met with understandable ___.','Argumentación'],
+['trade-off','compensación entre ventajas y desventajas','a situation where gaining one benefit requires giving up another','There is a ___ between speed and accuracy.','Argumentación'],
+['rationale','fundamento o justificación','the reasoning behind a decision','The director explained the ___ for changing the policy.','Argumentación']
+]};
+for(const level of ['B1','B2']){
+const list=vocabulary[level];
+for(let i=0;i<list.length;i++){
+const [word,es,en,example,topic]=list[i];
+const a=list[(i+11)%list.length],b=list[(i+23)%list.length];
+const note=`${word}: ${es}. ${example.replace('___',word)}`;
+data[level]['Vocabulario'].push(
+make(`¿Qué significa «${word}»?`,es,a[1],b[1],note,topic),
+make(`Choose the word: ${en}.`,word,a[0],b[0],note,topic),
+make(`Completá con la palabra que significa «${es}»: ${example}`,word,a[0],b[0],note,topic),
+make(`Escuchá y elegí la palabra que oís. · ${topic}`,word,a[0],b[0],note,topic,'',word),
+make(`Escuchá y elegí el significado en español. · ${topic}`,es,a[1],b[1],note,topic,'',word)
+);
+}
+}
+const situations=people.map((p,i)=>({...p,
+venue:['Harbour House','Park View','Riverside Centre','Oak Lodge','City Square'][i],
+time:['10:15','11:30','13:45','15:00','16:20'][i],
+otherTime:['12:00','14:00','16:00','17:30','18:00'][i],
+price:['£68','£74','£81','£92','£105'][i],
+nights:['two','three','four','five','six'][i],
+platform:['three','four','five','six','seven'][i],
+activity:['a photo exhibition','a science workshop','a music performance','a history tour','a drawing class'][i],
+project:['online bookings','flexible working hours','digital training','a bicycle rental scheme','a paperless office'][i],
+resource:['water','electricity','paper','fuel','packaging'][i]
+}));
+const reading={B1:[
+{
+topic:'Viajes · Reservas de hotel',build:c=>({
+text:`Dear ${c.n}, thank you for booking ${c.nights} nights at ${c.venue} in ${c.city}. Your single room costs ${c.price} per night. Breakfast is included, but parking costs extra. Check-in begins at ${c.time}. If you arrive earlier, we can store your bags while you explore the city. You may cancel free of charge until two days before arrival. Later cancellations will be charged for the first night. Please tell reception if you expect to arrive after ten in the evening.`,
+q:[
+['What is the purpose of this email?','To confirm a hotel booking','To advertise a new restaurant','To cancel a reservation','El correo confirma los detalles de una reserva ya realizada.'],
+['How long is the stay?',`${c.nights} nights`,'One night','A full month',`La primera oración confirma ${c.nights} noches.`],
+['Which service is included in the room price?','Breakfast','Parking','An evening meal','Breakfast is included significa que el desayuno está incluido.'],
+['What can an early arrival do?','Leave bags with the hotel','Enter the room immediately in all cases','Cancel without any time limit','El hotel ofrece guardar las valijas antes del horario de ingreso.'],
+['What happens with a late cancellation?','The first night is charged','The entire stay is free','There is always a full refund','Para cancelaciones posteriores al plazo se cobra la primera noche.']
+]})},
+{
+topic:'Transporte · Cambios de servicio',build:c=>({
+text:`Passengers travelling to ${c.city} on ${c.day} should check the revised timetable. The direct train will not operate because of track repairs. A replacement bus will leave from the station car park at ${c.time}, and passengers must show their train tickets when boarding. No extra payment is required. The journey will take about thirty minutes longer than usual. Bicycles cannot be carried on the bus, but folding bicycles are accepted if they are folded before boarding. Staff will be available at platform ${c.platform} to answer questions.`,
+q:[
+['Why is the direct train not running?','The railway track is being repaired','The drivers are on holiday','There are not enough passengers','Track repairs significa reparaciones de las vías.'],
+['Where does the replacement service leave from?','The station car park',`Platform ${c.platform}`,'The airport entrance','El autobús sale del estacionamiento. El andén mencionado es para consultar al personal.'],
+['What ticket do passengers need?','Their existing train ticket','A separate bus ticket','An international travel pass','Se acepta el billete de tren y no se cobra un extra.'],
+['How will the journey change?','It will take longer','It will be thirty minutes shorter','It will arrive at a different city','El trayecto tarda unos treinta minutos más.'],
+['Which bicycle can be taken on board?','A folding bicycle that has been folded','Any bicycle without restrictions','Only a bicycle rented at the station','Solo se admiten bicicletas plegables ya plegadas.']
+]})},
+{
+topic:'Trabajo · Una oferta de empleo',build:c=>({
+text:`The ${c.venue} team in ${c.city} is looking for a part-time reception assistant. The role involves welcoming visitors, answering calls and keeping appointment records. Applicants must be available on ${c.day} and Saturday afternoons. Previous office experience is helpful but not essential because training will be provided. Good spoken English and basic computer skills are required. Please send a short email explaining your availability and attach your CV. Shortlisted applicants will be invited to an online interview. Applications sent after the end of this month will not be considered.`,
+q:[
+['Which task belongs to this job?','Keeping appointment records','Repairing visitors’ computers','Teaching an English course','El aviso incluye llevar registros de citas, recibir personas y atender llamadas.'],
+['What is essential?','Basic computer skills','Several years of office experience','Owning a car','Se requieren conocimientos informáticos básicos. La experiencia previa es útil, pero no esencial.'],
+['What should applicants send?','An email about availability and a CV','Only a passport photo','A printed book of references','El aviso pide un correo sobre disponibilidad y un CV adjunto.'],
+['How will selected applicants be interviewed?','Online','At the train station','Only by written examination','Shortlisted applicants son quienes pasan la preselección; tendrán entrevista en línea.'],
+['What can be inferred about working hours?','The job does not require full-time attendance','The employee can choose any day','The job is only on weekday mornings','Part-time significa jornada parcial, aunque los días y franjas indicados sí son obligatorios.']
+]})},
+{
+topic:'Salud · Una cita médica',build:c=>({
+text:`Hello ${c.n}, this is a reminder of your appointment at ${c.venue} on ${c.day} at ${c.time}. Please arrive ten minutes early to complete a short form. Bring photo identification and a list of any medicines you currently take. If you need an interpreter, contact reception in advance so we can arrange one. If you cannot attend, please cancel at least a day before your appointment. This allows us to offer the time to another patient. For questions about costs, speak to reception before your visit.`,
+q:[
+['Why should the patient arrive early?','To complete a form','To buy medicine','To attend a group class','El mensaje explica que se debe completar un formulario antes de la cita.'],
+['What should the patient bring?','Identification and a medicine list','A new prescription written by a neighbour','Only cash','Se pide identificación con foto y una lista de los medicamentos actuales.'],
+['How can an interpreter be arranged?','By contacting reception beforehand','By arriving without telling anyone','By asking another patient during the appointment','In advance significa con anticipación.'],
+['Why does the clinic ask for early cancellations?','To offer the appointment to someone else','To close the clinic sooner','To avoid speaking with patients','Una cancelación anticipada permite asignar el horario a otra persona.'],
+['Who can answer questions about costs?','Reception staff','The bus driver','Other waiting patients','El último enunciado remite las consultas de costos a recepción.']
+]})},
+{
+topic:'Compras · Pedidos y devoluciones',build:c=>({
+text:`Your new ${c.item} is ready for collection at our ${c.city} branch. Please collect it within seven days and bring the order confirmation, either printed or on your phone. Someone else may collect it for you if they bring written permission and their own photo identification. If the product is faulty, contact us before returning it so we can arrange a replacement or refund. If you simply change your mind, the item must be unused and returned with all its packaging. Collection is available after ${c.time} on ${c.day}.`,
+q:[
+['How long will the store hold the order?','Seven days','Only one hour','Six months','Within seven days significa dentro de siete días.'],
+['Can the order confirmation be shown on a phone?','Yes','No, only paper is accepted','Only if the phone was bought in that shop','Se acepta la confirmación impresa o en el teléfono.'],
+['What does a person collecting for someone else need?','Written permission and their own identification','Only the buyer’s first name','A new product order','La persona que retira por otro debe llevar autorización escrita y su propia identificación.'],
+['What should the buyer do if the product is faulty?','Contact the shop before returning it','Throw it away immediately','Buy another product before complaining','Faulty significa defectuoso. El comercio pide contacto previo a la devolución.'],
+['What is required for a change-of-mind return?','An unused item with its packaging','An item that has been used for months','No packaging or proof of purchase','Para devolver por cambio de opinión, el artículo debe estar sin uso y con su embalaje.']
+]})},
+{
+topic:'Comunidad · Organización de eventos',build:c=>({
+text:`This ${c.day}, ${c.venue} will host ${c.activity} to raise money for a local food bank. The event begins at ${c.time}. Entry is free, but visitors are invited to make a donation. We need volunteers to welcome guests and help clear the room afterwards. Volunteers will receive a free meal, although travel costs cannot be paid. Please register with ${c.n} before the event. Children are welcome when accompanied by an adult. If you cannot attend, you can still support the food bank by donating through its website.`,
+q:[
+['What is the main aim of the event?','To support a local food bank','To sell the building','To recruit paid teachers','Raise money significa recaudar dinero para una causa.'],
+['Is there a compulsory entry fee?','No, entry is free','Yes, everyone must buy a ticket','Only children must pay','La entrada es gratuita; las donaciones son voluntarias.'],
+['What benefit do volunteers receive?','A free meal','Paid travel and a salary','A new laptop','Se ofrece comida, pero no se cubre el transporte ni se menciona sueldo.'],
+['What condition applies to children?','They must come with an adult','They must register as volunteers','They cannot attend','Accompanied by an adult significa acompañados por una persona adulta.'],
+['How can someone help without attending?','By donating online','By calling the railway company','By ordering a restaurant meal','El aviso permite donar a través del sitio web.']
+]})},
+{
+topic:'Estudio · Aprender en grupo',build:c=>({
+text:`Dear students, our project on life in ${c.city} is due next ${c.day}. Work in groups of three and choose one topic, such as transport, housing or local history. Each group should interview at least two residents and include a short summary of their answers. You may use online information, but you must say where it came from. The final presentation should last between five and seven minutes. Everyone in the group must speak. If you need help finding people to interview, contact ${c.n} at the study centre before the weekend.`,
+q:[
+['How many students should be in each group?','Three','Two','Seven','El texto pide grupos de tres; las dos personas corresponden a entrevistas.'],
+['What must the research include?','Interviews with at least two residents','Only facts copied from a website','A paid survey of every resident','Se necesitan entrevistas a por lo menos dos residentes.'],
+['What rule applies to online information?','Its source must be stated','It must never be used','It can be copied without a reference','Say where it came from exige indicar la fuente.'],
+['Who must speak during the presentation?','Every group member','Only the best English speaker','Only the teacher','Everyone in the group must speak: cada integrante debe participar oralmente.'],
+['What help is offered?','Support finding interview participants','Extra marks without doing the project','A replacement for all group work','El centro puede ayudar a encontrar personas para entrevistar.']
+]})}
+],B2:[
+{
+topic:'Tecnología · Privacidad y automatización',build:c=>({
+text:`When ${c.venue} in ${c.city} proposed introducing ${c.project}, managers focused on the time employees would save. The staff consultation raised a different issue: who would be able to see the records generated by the system. Employees did not reject the proposal, but asked for clear limits on access and retention. The supplier argued that collecting more information would improve personalisation. An independent adviser pointed out that useful features did not automatically justify keeping every record indefinitely. The organisation decided to test a version that retained less data, even though this meant postponing some optional features.`,
+q:[
+['What was the employees’ main concern?','How the resulting information would be handled','Whether the office furniture would change','The complete removal of all technology','El personal preguntó por acceso y conservación de registros, no rechazó la tecnología en general.'],
+['How did the supplier justify more data collection?','It could improve personalisation','It would eliminate every security risk','It was legally required in all cases','El proveedor vinculó mayor recolección con personalización, sin demostrar que todo dato fuera imprescindible.'],
+['What distinction did the adviser make?','A useful feature does not justify unlimited retention','Data retention and personalisation are identical','All records must always be destroyed immediately','Se distingue utilidad de proporcionalidad: que algo sirva no justifica conservar todos los registros para siempre.'],
+['What does the final decision show?','The organisation accepted a trade-off','The staff rejected every proposal','The supplier was given unrestricted access','Se sacrifican funciones opcionales por menor retención de datos: un equilibrio entre objetivos.'],
+['Which description best fits the passage?','A negotiated introduction with safeguards','A promotional claim of risk-free automation','An argument that consultation is unnecessary','La decisión incorpora consulta, evaluación y límites, en vez de adopción sin condiciones.']
+]})},
+{
+topic:'Trabajo · Flexibilidad y equidad',build:c=>({
+text:`A team in ${c.city} piloted ${c.project}. The initial report celebrated quicker completion of routine tasks. However, ${c.n} noticed that the figures did not account for the support staff who had absorbed extra administrative work. Interviews also suggested that some employees were answering messages outside their scheduled hours to keep the headline results looking positive. Rather than abandon the pilot, the review group recommended measuring total workload across roles and checking whether gains continued over several months. It argued that an improvement for one team should not be described as an organisation-wide success if the burden had simply moved elsewhere.`,
+q:[
+['What limitation did the initial report have?','It overlooked work transferred to other staff','It contained no numerical information','It measured every role equally','El informe ignoraba la carga adicional absorbida por personal de apoyo.'],
+['What might the out-of-hours messages indicate?','The apparent efficiency could conceal additional effort','Every employee preferred longer hours','The official figures necessarily included all working time','Los resultados podrían depender de esfuerzo no reflejado en las métricas.'],
+['What did the review group recommend?','Broader and longer-term measurement','Immediate permanent adoption without changes','Measuring only the fastest employee','Propuso medir carga total entre roles y sostenibilidad durante varios meses.'],
+['What does “the burden had simply moved elsewhere” imply?','A problem may have been redistributed rather than solved','The office had physically relocated','The staff had all been promoted','La expresión indica que el costo laboral recayó en otras personas en vez de desaparecer.'],
+['What is the writer’s overall approach?','Critical but open to improvement','Unconditionally enthusiastic','Entirely opposed to gathering evidence','Se cuestionan las métricas sin descartar el piloto: crítica orientada a mejorar.']
+]})},
+{
+topic:'Ciencia · Evaluación de evidencia',build:c=>({
+text:`Researchers at a college in ${c.city} tested whether a new learning method improved performance. Participants chose whether to join the trial, and those who did received extra attention from tutors as well as the new materials. Their scores rose, but the report acknowledged that motivation and additional contact might have contributed. ${c.n}, who led the evaluation, stressed that the findings were promising rather than conclusive. A follow-up study would assign participants randomly and give both groups the same amount of tutor contact. This would make it easier to separate the effect of the materials from other influences.`,
+q:[
+['Why is it difficult to identify the cause of the improvement?','Several factors changed at the same time','The scores did not change at all','The trial used random assignment from the start','El método, la motivación y el contacto con tutores variaron juntos.'],
+['What problem can voluntary participation create?','Participants may differ from those who do not join','All participants must have identical motivation','It automatically proves that results are false','La autoselección puede producir diferencias previas entre participantes y no participantes.'],
+['Why equalise tutor contact in the follow-up?','To reduce a competing explanation for any difference','To remove all teaching from both groups','To ensure that only one group receives support','Al igualar el contacto se aísla mejor el efecto de los materiales.'],
+['What does “promising rather than conclusive” mean?','Encouraging but not sufficient for certainty','Completely useless','Already proved beyond any doubt','Los hallazgos merecen estudio adicional, pero no permiten una conclusión definitiva.'],
+['Which conclusion is best supported?','A more controlled study is needed','The materials will help every learner equally','Motivation has no effect on learning','El texto justifica un diseño de investigación más controlado.']
+]})},
+{
+topic:'Medios · Interpretar una noticia',build:c=>({
+text:`A headline claimed that ${c.city} residents had “turned against” a new public service. The article was based on comments submitted through a complaints page rather than a survey of the wider population. Several comments raised specific concerns about opening hours, yet the headline presented them as opposition to the service itself. A local editor later defended the story as a reflection of genuine frustration. Critics did not dispute that frustration existed; they argued that its extent and target had been overstated. The distinction matters because a proposal to improve a service calls for a different response from a demand to remove it.`,
+q:[
+['What is a problem with the source of the comments?','It is likely to overrepresent dissatisfied users','It includes every resident equally','It prevents anyone from expressing criticism','Una página de quejas tiende a atraer a personas descontentas y no representa necesariamente al conjunto.'],
+['How did the headline change the meaning?','It treated specific complaints as rejection of the whole service','It accurately separated all types of opinion','It reported only verified survey percentages','La crítica a horarios se amplió a una supuesta oposición al servicio completo.'],
+['What did the critics accept?','Some frustration was genuine','The headline measured public opinion precisely','Every resident wanted the service removed','Aceptaron el descontento, pero cuestionaron su magnitud y su objeto.'],
+['Why does the final distinction matter?','Improvement and removal require different policy responses','Both positions always demand the same action','Headlines never affect decisions','Pedir mejoras no equivale a pedir eliminación; la respuesta pública cambia.'],
+['What is the central lesson?','Examine how evidence is selected and framed','Ignore all negative comments','Assume that vivid wording guarantees accuracy','Importa revisar tanto la selección de evidencia como el encuadre periodístico.']
+]})},
+{
+topic:'Ambiente · Decisiones sostenibles',build:c=>({
+text:`The managers of ${c.venue} wanted to reduce their use of ${c.resource}. One supplier advertised a replacement as environmentally friendly because its production generated fewer emissions. A consultant asked the team to consider transport, maintenance and actual lifespan as well. A product that looked better at the factory gate might perform worse if it had to be replaced frequently. The team therefore requested estimates under several usage patterns rather than accepting a single ideal scenario. It also kept the existing equipment operating while gathering evidence, reasoning that throwing away usable items could offset part of the benefit of replacing them.`,
+q:[
+['Why was the supplier’s comparison incomplete?','It focused on production rather than the full lifecycle','It included too many transport scenarios','It measured actual lifespan in every setting','El análisis inicial cubría fabricación, pero omitía transporte, mantenimiento y duración real.'],
+['What could reverse the apparent benefit?','Frequent replacement','A longer useful life in every case','Using the same calculation assumptions','Una vida útil corta puede hacer que la alternativa resulte peor en conjunto.'],
+['Why examine several usage patterns?','The result depends on how the product is actually used','Only the most favourable scenario is relevant','All customers use products identically','La evaluación depende del uso real y no solo de un caso ideal.'],
+['Why keep existing equipment temporarily?','Discarding usable items can carry its own environmental cost','The team had abandoned its environmental aim','The supplier required old equipment to be destroyed','Desechar objetos funcionales también tiene un costo ambiental.'],
+['Which term best describes the approach?','A lifecycle assessment mindset','A decision based solely on advertising','A belief that replacement is always harmful','Se consideran impactos a lo largo de la vida del producto, sin reglas absolutas.']
+]})},
+{
+topic:'Cultura · Acceso y participación',build:c=>({
+text:`After introducing free admission, a museum in ${c.city} saw visitor numbers rise. The director initially took this as evidence that access barriers had been removed. A closer review found that the increase was concentrated among people who already visited museums regularly. Interviews with non-visitors mentioned inconvenient opening hours, uncertainty about what to expect and a lack of transport. ${c.n} proposed testing evening sessions and working with local groups to explain what a first visit involved. The museum would still report attendance, but would also examine who was participating and whether newcomers returned.`,
+q:[
+['Why was the initial interpretation too broad?','Higher attendance did not necessarily mean wider participation','Visitor numbers had actually fallen','Admission had remained expensive','Más visitas no garantizan que hayan llegado grupos antes excluidos.'],
+['Which barrier remained after admission became free?','Inconvenient opening hours','The entrance ticket price itself','A ban on first-time visitors','El texto menciona horarios, transporte e incertidumbre, aunque no se cobre entrada.'],
+['What is the purpose of working with local groups?','To help unfamiliar visitors understand and access the experience','To replace the entire museum collection','To restrict visits to existing members','La colaboración busca reducir barreras prácticas y de familiaridad.'],
+['Why track whether newcomers return?','It can indicate engagement beyond a one-off visit','It proves that all barriers have disappeared','It removes the need to count visitors','El regreso puede mostrar participación sostenida, no solo una visita aislada.'],
+['What principle does the passage illustrate?','Measures of success should reflect the actual aim','One easily counted figure is always sufficient','Free services cannot have access problems','Para evaluar inclusión hacen falta indicadores alineados con ese objetivo.']
+]})},
+{
+topic:'Educación · Aprendizaje autónomo',build:c=>({
+text:`A language programme at ${c.venue} offered learners increasingly detailed progress statistics. Some students became skilled at keeping a daily streak but avoided activities in which they made mistakes. Tutors noticed that the dashboard rewarded completion more visibly than thoughtful revision. The programme kept its motivational features, but added opportunities to retry unfamiliar tasks and explain why an answer was wrong. Students could choose a daily target, while the tutor emphasised that missing one day did not erase previous learning. Progress would be judged partly through new situations that required transferring knowledge, not simply repeating the same successful responses.`,
+q:[
+['What unintended behaviour did the dashboard encourage?','Choosing easy tasks to protect visible success','Seeking the hardest tasks at all times','Avoiding all completed activities','Algunos alumnos evitaban errores para mantener cifras favorables.'],
+['Why add explanations of wrong answers?','To support reflection and understanding','To make completion faster without thinking','To remove the need for practice','Explicar el error transforma la corrección en reflexión sobre el contenido.'],
+['What view of daily streaks is suggested?','They can motivate but should not define all progress','They are the only reliable measure of learning','Breaking a streak erases knowledge','Las rachas pueden servir, pero no equivalen al aprendizaje completo.'],
+['What does transferring knowledge involve?','Applying learning in unfamiliar situations','Memorising a screen position','Repeating only identical questions','Transferencia significa usar lo aprendido en contextos nuevos.'],
+['What is the programme trying to balance?','Motivation and meaningful learning','Public rankings and advertising income','Attendance and transport costs','Se mantienen incentivos, pero se corrigen para favorecer comprensión y práctica útil.']
+]})}
+]};
+for(const level of ['B1','B2'])for(const pack of reading[level])for(const c of situations){
+const {text,q}=pack.build(c);
+for(const item of q)data[level]['Lectura'].push(make(item[0],item[1],item[2],item[3],item[4],pack.topic,text));
+}
+const listening={B1:[
+{
+topic:'Escucha · Reservar una habitación',build:c=>({
+text:`Receptionist: Good afternoon, ${c.venue}. How can I help? Guest: Hello, my name is ${c.n}. I need a room for ${c.nights} nights, starting on ${c.day}. Receptionist: We have a single room at ${c.price} per night, including breakfast. Guest: That sounds fine. Is there somewhere to leave my bicycle? Receptionist: Yes, we have a locked storage room, and there is no charge. Guest: Great. I will arrive around ${c.time}. Receptionist: Your room may not be ready, but we can look after your bags until it is.`,
+q:[
+['How many nights does the guest need?',`${c.nights} nights`,'One night','Ten nights',`La persona pide ${c.nights} noches.`],
+['What does the room price include?','Breakfast','Dinner and parking','A guided city tour','El recepcionista dice including breakfast.'],
+['What does the guest want to store?','A bicycle','A large musical instrument','A rented car','Pregunta por un lugar para dejar su bicicleta.'],
+['What is said about the storage room?','It is locked and free to use','It costs extra each night','It is outside and has no lock','Locked indica que se cierra con llave; no charge significa sin cargo.'],
+['What can the hotel do if the room is not ready?','Keep the guest’s bags','Guarantee immediate entry','Cancel the booking automatically','Ofrece guardar las valijas hasta que la habitación esté lista.']
+]})},
+{
+topic:'Escucha · Cambiar una cita',build:c=>({
+text:`Caller: Hello, I have an appointment with the nurse on ${c.day} at ${c.time}, but I have to work then. Receptionist: We can offer ${c.otherTime} on the same day. Caller: Yes, that would be much better. Do I need to bring anything? Receptionist: Please bring your identification and the letter we sent you. Caller: I cannot find the letter. Receptionist: That is all right. We can print another copy here. Just arrive a little early. Caller: Thank you. My name is ${c.n}.`,
+q:[
+['Why does the caller need a different time?','A work commitment','A broken car','A holiday abroad','La persona dice I have to work then.'],
+['When is the new appointment?',c.otherTime,c.time,'The following month',`El horario aceptado es ${c.otherTime} del mismo día.`],
+['What has the caller lost?','The letter','Their identification','Their phone','Dice I cannot find the letter.'],
+['How will the missing document be replaced?','Reception will print another copy','The caller must apply online for a month','The appointment must be cancelled','Recepción puede imprimir otra copia.'],
+['What should the caller do?','Arrive a little early','Arrive after the appointment ends','Pay for a replacement passport','Se pide llegar un poco antes para resolver el documento.']
+]})},
+{
+topic:'Escucha · Cambiar un producto',build:c=>({
+text:`Customer: I bought this ${c.item} last week, but it does not work properly. Assistant: Have you got the receipt? Customer: Yes, here it is. I would like to exchange it, not get my money back. Assistant: We do not have the same model in this branch today, but another branch in ${c.city} has one. Customer: I cannot go there. Assistant: We can have it delivered here by ${c.day}. Customer: That is fine. Please call me when it arrives. My name is ${c.n}.`,
+q:[
+['What is wrong with the purchase?','It does not work properly','It is the wrong colour only','It was never delivered','El cliente afirma que el producto no funciona correctamente.'],
+['Does the customer have proof of purchase?','Yes, a receipt','No, nothing at all','Only a photograph of the shop','Have you got the receipt? Yes, here it is.'],
+['What does the customer prefer?','An exchange','A refund','A second unrelated product','Exchange significa cambio. Dice que no busca devolución del dinero.'],
+['Where is the replacement currently available?',`Another branch in ${c.city}`,'In the customer’s house','Nowhere in the company','La otra sucursal tiene el modelo.'],
+['What arrangement is accepted?','Delivery to the current branch and a phone call','Collection from another city today','An immediate cancellation','El cliente acepta esperar el traslado y que lo llamen al llegar.']
+]})},
+{
+topic:'Escucha · Reorganizar una reunión',build:c=>({
+text:`Hi ${c.n}, it is Alex. The meeting on ${c.day} is still at ${c.time}, but we have changed the room. The large meeting room is being painted, so we will use the smaller one beside reception. Please bring the latest version of ${c.thing}. You do not need to print it; we can show it on the screen. If you have trouble opening the file, send it to me beforehand. I will be in the office from nine. Call me if you have any questions.`,
+q:[
+['Which detail has changed?','The meeting room','The day','The starting time','El día y la hora siguen iguales; cambia la sala.'],
+['Why is the original room unavailable?','It is being painted','It has no internet','It is in another city','Being painted significa que la están pintando.'],
+['Where is the new room?','Beside reception','On the roof','Across the street','Beside significa junto a.'],
+['Does the document need to be printed?','No, it can be shown on a screen','Yes, one copy for each person','Only if it has fewer than ten pages','La persona indica que no hace falta imprimir.'],
+['What should the listener do if the file will not open?','Send it to the speaker in advance','Miss the meeting','Delete it permanently','Beforehand significa de antemano; puede enviárselo antes.']
+]})},
+{
+topic:'Escucha · Pedir en un restaurante',build:c=>({
+text:`Waiter: Are you ready to order? Customer: Almost. Does the vegetable soup contain milk? Waiter: Yes, it has cream. Customer: I cannot have dairy products. Is the tomato salad suitable? Waiter: It normally comes with cheese, but we can leave that out. Customer: Perfect. I will have that and some bread. Waiter: Anything to drink? Customer: Tap water, please. And could we have separate bills? I am meeting my friend ${c.n}, but we will pay separately. Waiter: Of course.`,
+q:[
+['Why does the customer ask about ingredients?','They cannot have dairy products','They dislike every vegetable','They want to cook the soup themselves','Dairy products son productos lácteos.'],
+['Why does the customer not choose the soup?','It contains cream','It is sold out','It is too cold','La sopa lleva crema, un lácteo.'],
+['How will the salad be changed?','The cheese will be omitted','Extra cream will be added','All tomatoes will be removed','Leave that out significa omitirlo; se refiere al queso.'],
+['What drink is ordered?','Tap water','Sparkling wine','Orange juice','Tap water es agua de la canilla o grifo.'],
+['What does the customer request about payment?','Separate bills','One combined bill paid by the waiter','Free food for the friend','Separate bills indica cuentas separadas.']
+]})},
+{
+topic:'Escucha · Consultar por un curso',build:c=>({
+text:`Student: I saw the notice for the evening course at ${c.venue}. Is it suitable for beginners? Organiser: Yes, no experience is needed. We meet every ${c.day}, and the course lasts six weeks. Student: Do I need to buy a textbook? Organiser: No, the materials are included. Just bring something to write with. Student: I may miss one session because of work. Organiser: That is fine. We will email you the notes, although we cannot repeat the practical activity individually. Student: Can I register online? Organiser: Yes, the form is on our website.`,
+q:[
+['Who can join the course?','Beginners','Only qualified teachers','Only people with advanced experience','No experience is needed: no se exige experiencia.'],
+['How long does the course last?','Six weeks','Six days','Six months','Lasts six weeks indica la duración.'],
+['What should the student bring?','Something to write with','An expensive textbook','A complete computer system','Los materiales están incluidos; se pide algo para escribir.'],
+['What support is offered for a missed class?','Notes by email','A private repeat of every practical activity','A full cancellation of the course','Envían apuntes, pero no repiten individualmente la práctica.'],
+['How can the student register?','Through a website form','Only in person at the station','By sending cash in an envelope','El formulario está en el sitio web.']
+]})},
+{
+topic:'Escucha · Ayudar a un vecino',build:c=>({
+text:`Hi ${c.n}, it is your neighbour Sam. I am going away on ${c.day} and will be back in a week. Would you mind watering my plants twice while I am away? I have left the watering can in the kitchen. There is no need to feed the cat because my sister is taking care of him at her house. I will leave a spare key with you this evening if that is convenient. Let me know if you cannot help; I can ask someone else. Thank you!`,
+q:[
+['How long will the speaker be away?','One week','One afternoon','Two months','Be back in a week significa volver dentro de una semana.'],
+['What help is requested?','Watering plants twice','Taking the cat to the vet','Painting the kitchen','El pedido es regar las plantas dos veces durante la ausencia.'],
+['Where is the watering can?','In the kitchen','At the sister’s house','In the car','Watering can significa regadera; está en la cocina.'],
+['Who will care for the cat?','The speaker’s sister','The listener’s employer','Nobody','La hermana lo cuidará en su casa.'],
+['What will the speaker give the neighbour?','A spare key','A train ticket','A new pet','Spare key significa llave de repuesto.']
+]})}
+],B2:[
+{
+topic:'Escucha · Negociar prioridades',build:c=>({
+text:`Manager: We could launch ${c.project} next month if we keep the scope modest. Colleague: I understand the pressure to move quickly, but I am concerned about the support team. They are already at capacity. Manager: Would a trial with one department help? Colleague: Possibly, provided we agree on a clear limit and review the workload after two weeks. I would rather delay the optional features than promise support we cannot deliver. Manager: That seems reasonable. Let us define what the pilot will exclude before we announce a date.`,
+q:[
+['What is the colleague’s main reservation?','The support team may not have enough capacity','The project has no conceivable benefit','The announcement date has already passed','La objeción concreta se refiere a capacidad del equipo de apoyo.'],
+['How does the colleague respond to a trial?','With conditional support','With unconditional enthusiasm','With a refusal to discuss it','Possibly, provided... expresa apoyo sujeto a condiciones.'],
+['Which trade-off is preferred?','Delay optional features rather than overpromise support','Include every feature regardless of staffing','Avoid any review of the workload','Prefiere reducir alcance antes que prometer asistencia que no se pueda dar.'],
+['What will be decided before announcing the date?','The boundaries of the pilot','The colour of the marketing posters','The replacement of all staff','Define what the pilot will exclude: delimitar su alcance.'],
+['What is the tone of the exchange?','Constructive and pragmatic','Hostile and personal','Entirely dismissive','Ambos ajustan la propuesta a restricciones reales sin ataques personales.']
+]})},
+{
+topic:'Escucha · Aclarar un malentendido',build:c=>({
+text:`I have looked back at my email to ${c.n} about ${c.thing}. I can see why there was confusion. I wrote that I would appreciate it soon, but I never actually specified ${c.day}. At the time I assumed the deadline was obvious from our earlier conversation. That was not a fair assumption, especially as the schedule had changed twice. I am not saying that communication was perfect on either side, but I should have made the date explicit and checked that it was workable. I will do that in future rather than rely on hints.`,
+q:[
+['What caused the misunderstanding?','The deadline was implied rather than stated','The email contained the wrong attachment only','The recipient was unable to read English','Soon no especificaba un día concreto; se dependía de un supuesto compartido.'],
+['What does the speaker acknowledge?','A personal contribution to the problem','That the other person was solely responsible','That deadlines are never useful','Reconoce que debió explicitar y comprobar el plazo.'],
+['Why was the assumption particularly unreliable?','The schedule had changed several times','The project had no schedule at all','The recipient had already confirmed every detail','Los cambios anteriores hacían menos seguro suponer que la fecha era obvia.'],
+['What does “workable” mean here?','Practical and possible to meet','Printed in a formal font','Unnecessary to discuss','Un plazo workable es viable dadas las condiciones.'],
+['What change does the speaker intend?','State deadlines explicitly and confirm feasibility','Use more indirect hints','Avoid all written communication','El objetivo es claridad y verificación, no solo escribir más mensajes.']
+]})},
+{
+topic:'Escucha · Hablar de una carrera',build:c=>({
+text:`Interviewer: You moved from a permanent role to freelance work in ${c.city}. Was the main attraction a better income? Interviewee: Not really. Some months I earn more, others less. What appealed to me was being able to choose projects and organise my time. That freedom comes with responsibilities, though. I spend more time on administration than I expected, and turning down work is difficult when the next month is uncertain. I do not regret the move, but I would advise anyone considering it to build a financial buffer and test the market first.`,
+q:[
+['What was the main motivation for the change?','Greater choice and control','Guaranteed higher pay','Freedom from administrative duties','La motivación fue elegir proyectos y organizar horarios, no un ingreso garantizado.'],
+['What has been unexpectedly demanding?','Administrative work','A compulsory daily commute','Having no decisions to make','Se dedica más tiempo del previsto a administración.'],
+['Why can refusing work be difficult?','Future income is uncertain','Every offer is legally compulsory','The interviewee dislikes choosing projects','La incertidumbre del siguiente mes hace difícil rechazar encargos.'],
+['What advice is offered?','Prepare financially and investigate demand','Quit immediately without preparation','Assume that all months will be equally profitable','Recomienda un colchón financiero y probar el mercado.'],
+['How does the speaker assess the decision?','Positively but realistically','As a complete mistake','As a risk-free path for everyone','No se arrepiente, pero reconoce costos y riesgos.']
+]})},
+{
+topic:'Escucha · Evaluar afirmaciones',build:c=>({
+text:`Before we discuss the figures from ${c.city}, I want to distinguish two questions. The first is whether the reported improvement is real. The second is whether the new programme caused it. Reliable measurements could answer the first without settling the second. If demand changed, or if a more experienced team took over at the same time, those factors might explain some of the result. This is not a reason to dismiss the programme. It is a reason to compare plausible explanations and avoid presenting confidence as a substitute for evidence.`,
+q:[
+['What distinction is central to the talk?','An observed change and its cause','Numbers and all forms of evidence','Experienced staff and all other employees','Se separa constatar una mejora de demostrar su causa.'],
+['What role do the alternative factors play?','They offer competing explanations','They automatically prove the programme failed','They are irrelevant by definition','Demanda y experiencia del equipo podrían explicar parte del resultado.'],
+['Does the speaker reject the programme?','No, the speaker calls for careful evaluation','Yes, without considering any evidence','Yes, because all improvements are imaginary','El discurso aclara que no pretende descartar el programa.'],
+['What is being criticised at the end?','Treating confident claims as if they were evidence','Collecting reliable measurements','Considering more than one explanation','La seguridad al hablar no reemplaza respaldo empírico.'],
+['What attitude is encouraged?','Open-minded scrutiny','Automatic acceptance','Refusal to draw any conclusions ever','Se recomienda examinar explicaciones manteniendo apertura a la evidencia.']
+]})},
+{
+topic:'Escucha · Turismo y vida local',build:c=>({
+text:`Tourism has brought jobs to ${c.city}, and I would not want to lose that. But saying that visitor numbers are rising does not tell us who is benefiting. Some residents face higher rents, while many new jobs are seasonal. We need to look at the quality and distribution of the benefits, not just their total size. Measures such as protecting long-term housing and spreading visits across the year might help. The aim should be a town that remains liveable for residents as well as attractive to visitors. Those goals can support each other if we plan carefully.`,
+q:[
+['What does the speaker accept about tourism?','It creates valuable employment','It benefits everyone equally','It should be stopped completely','Reconoce que genera empleo y no pretende perderlo.'],
+['Why are visitor numbers insufficient as a success measure?','They do not show who gains or bears costs','They cannot be counted','They prove that housing is affordable','El volumen no refleja reparto de beneficios y costos.'],
+['Which disadvantage is mentioned?','Pressure on housing costs','A permanent ban on local employment','The absence of any visitors','Se mencionan alquileres más altos y empleos estacionales.'],
+['What solution is suggested?','Protect housing and distribute visits through the year','Concentrate all visitors in one week','Replace all housing with hotels','La propuesta combina vivienda estable y menor estacionalidad.'],
+['What is the speaker’s preferred outcome?','Benefits for residents and visitors together','Visitors replacing the resident population','An economy with no tourism jobs','Busca compatibilizar una localidad habitable con su atractivo turístico.']
+]})},
+{
+topic:'Escucha · Comparar proveedores',build:c=>({
+text:`The quote for the new ${c.item} system is lower than the other two, but I would not make a decision on that figure alone. The maintenance contract is priced separately, and training is only included for the first month. We also need to find out how easily our existing records can be transferred. If that takes staff several weeks, the apparent saving may disappear. I suggest asking each supplier for a total cost over three years, using the same assumptions. Then we can compare like with like rather than reward whichever proposal leaves out the most detail.`,
+q:[
+['Why is the cheapest quote not necessarily best?','Important costs may be excluded','The speaker has already bought the most expensive option','All suppliers provide identical terms','El precio inicial no incluye necesariamente soporte, formación y migración.'],
+['What uncertainty concerns existing records?','The effort needed to transfer them','Their printed colour','Whether all records must be made public','Se necesita saber cuánto trabajo llevará trasladar la información.'],
+['What comparison does the speaker recommend?','Three-year costs under common assumptions','Only the first payment','Different time periods for every supplier','Propone un costo total a tres años con criterios homogéneos.'],
+['What does “compare like with like” mean?','Compare equivalent items on a consistent basis','Choose the proposal with the shortest text','Ignore differences in what is included','La expresión pide comparar elementos equivalentes bajo los mismos criterios.'],
+['What is the purpose of the recommendation?','To reveal the real overall commitment','To avoid asking suppliers any questions','To guarantee that the lowest initial quote wins','Busca evaluar el compromiso total, no premiar omisiones en el presupuesto.']
+]})},
+{
+topic:'Escucha · Cambiar hábitos de consumo',build:c=>({
+text:`People often ask whether buying a reusable product is always the sustainable choice. The honest answer is that it depends. How often will it be used? What does cleaning require? Is it replacing something that still works? In our community group in ${c.city}, we start by looking at habits rather than shopping lists. Borrowing an item used once a year may make more sense than owning an expensive reusable version. I am not against better products; I simply think that buying a solution and changing behaviour are different things, and sometimes the second matters more.`,
+q:[
+['How does the speaker answer the opening question?','The answer depends on use and context','Reusable products are always best','Reusable products never help','El análisis depende de frecuencia de uso, limpieza y lo que se reemplaza.'],
+['Why might borrowing be preferable?','The item may be needed very rarely','Ownership is illegal','Borrowed products never require cleaning','Para un uso anual, compartir puede tener más sentido que comprar.'],
+['What does the group examine first?','Habits','Advertising budgets','Packaging colour only','Se empiezan a analizar hábitos, no listas de compras.'],
+['What distinction is made near the end?','Purchasing a product and changing behaviour','Price and every type of quality','Cleaning and all environmental damage','Comprar una solución no equivale a modificar la conducta.'],
+['Which view best represents the speaker?','Better products can help, but behaviour also matters','Every purchase solves the underlying problem','Sustainability is impossible to evaluate','No rechaza mejoras de producto, pero considera crucial el uso real.']
+]})}
+]};
+for(const level of ['B1','B2'])for(const pack of listening[level])for(const c of situations){
+const {text,q}=pack.build(c);
+for(const item of q)data[level]['Escucha'].push(make(item[0],item[1],item[2],item[3],item[4],pack.topic,text));
+}
+})();
+
+(()=>{
+const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const types=['Gramática','Vocabulario','Lectura','Escucha'];
+const allCount=()=>Object.values(data).reduce((sum,g)=>sum+Object.values(g).reduce((n,q)=>n+q.length,0),0);
+const exerciseKey=(l,t,i)=>`${l}:${t}:${i}`;
+const rec=(l,t,i)=>state.practice[exerciseKey(l,t,i)];
+const topic=q=>q[5]?.topic||'Repaso general';
+const done=(l,t)=>data[l][t].filter((_,i)=>rec(l,t,i)).length;
+const known=(l,t)=>data[l][t].filter((_,i)=>rec(l,t,i)?.correct).length;
+const wrong=(l,t)=>data[l][t].filter((_,i)=>rec(l,t,i)?.correct===false).length;
+const fmt=n=>n.toLocaleString('es-AR');
+state.practice=state.practice||{};
+state.preferences={size:10,mode:'mixed',...state.preferences};
+if(![5,10,20].includes(Number(state.preferences.size)))state.preferences.size=10;
+let chosen=null;
+const randomise=array=>{for(let i=array.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[array[i],array[j]]=[array[j],array[i]]}return array};
+const style=document.createElement('style');
+style.textContent=`.ep-controls{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin:20px 0}.ep-controls label{display:block;font-size:13px}.ep-controls select{display:block;width:100%;margin-top:7px;white-space:normal;background:white;color:#203d34}.ep-buttons{display:flex;gap:10px;flex-wrap:wrap}.ep-muted{font-size:13px;color:#63766a}.ep-badge{display:inline-block;padding:6px 10px;background:#edf2e6;border-radius:8px;font-size:12px}.ep-explain{line-height:1.8}.ep-error{background:#fff1e8;padding:16px;border-radius:10px}.ep-topic-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ep-topic{border:1px solid #dce3d5;border-radius:12px;padding:14px}.ep-topic b{font-size:13px}.ep-topic p{font-size:12px;margin-bottom:0}.ep-back{margin-bottom:18px}.ep-q{font-size:23px;overflow-wrap:anywhere}.reading{white-space:pre-wrap}.options button{min-height:48px}#feedback:empty{display:none}@media(max-width:560px){.ep-controls,.ep-topic-grid{grid-template-columns:1fr}.ep-q{font-size:21px}.ep-buttons button{width:100%}}`;
+document.head.appendChild(style);
+function levelStats(l){return types.reduce((r,t)=>({done:r.done+done(l,t),known:r.known+known(l,t),wrong:r.wrong+wrong(l,t),total:r.total+data[l][t].length}),{done:0,known:0,wrong:0,total:0})}
+home=function(){
+stopVoice();session=null;chosen=null;
+const stats=levelStats(state.level);
+app.innerHTML=`<section class="panel"><small>TU PRÓXIMO PASO · ${state.level}</small><h2>Tu inglés, tema por tema.</h2><p><b>${fmt(allCount())} ejercicios entre B1 y B2.</b> Elegí una habilidad y un tema. Hay actividades relacionadas que reutilizan un texto o una estructura para reforzar lo aprendido.</p><div class="stats"><span>${fmt(stats.done)} / ${fmt(stats.total)} practicados en ${state.level}</span><span>${fmt(stats.wrong)} para repasar</span></div><div class="grid">${types.map((t,i)=>`<button class="card" data-type="${t}"><b>${['Aa','✳','▤','♫'][i]} ${t}</b><small>${data[state.level][t].length} ejercicios · ${done(state.level,t)} practicados</small><p class="ep-muted">Elegir tema →</p></button>`).join('')}</div></section>`;
+app.querySelectorAll('[data-type]').forEach(b=>b.onclick=()=>choose(b.dataset.type));
+};
+function choose(type,selectedTopic='all',mode=state.preferences.mode){
+stopVoice();session=null;chosen={type,topic:selectedTopic,mode};
+const list=data[state.level][type],topics=[...new Set(list.map(topic))].sort((a,b)=>a.localeCompare(b,'es'));
+app.innerHTML=`<section class="panel"><button class="ep-back" id="backHome">← Todas las habilidades</button><small style="display:block">${state.level} · ${type}</small><h2>¿Qué querés practicar?</h2><div class="ep-controls"><label>Tema<select id="ep-topic"><option value="all">Todos los temas (${list.length})</option>${topics.map(t=>`<option value="${esc(t)}" ${t===selectedTopic?'selected':''}>${esc(t)} (${list.filter(q=>topic(q)===t).length})</option>`).join('')}</select></label><label>Preguntas por sesión<select id="ep-size">${[5,10,20].map(n=>`<option ${Number(state.preferences.size)===n?'selected':''}>${n}</option>`).join('')}</select></label><label>Modo<select id="ep-mode"><option value="mixed" ${mode==='mixed'?'selected':''}>Mi práctica: nuevas y repaso</option><option value="new" ${mode==='new'?'selected':''}>Solo preguntas nuevas</option><option value="errors" ${mode==='errors'?'selected':''}>Repasar mis errores</option></select></label></div><div id="ep-count" class="ep-muted" aria-live="polite"></div><div class="ep-buttons" style="margin-top:20px"><button class="primary" id="ep-start">Empezar sesión →</button></div><p class="ep-muted">${type==='Escucha'?'El audio usa la voz sintetizada de tu navegador. Podés volver a escucharlo o consultar la transcripción.':type==='Vocabulario'?'Algunos ejercicios de vocabulario incluyen audio para practicar reconocimiento y significado.':'Al terminar cada pregunta vas a ver la respuesta y su explicación.'}</p><details><summary>Ver los temas disponibles</summary><div class="ep-topic-grid" style="margin-top:15px">${topics.map(t=>`<div class="ep-topic"><b>${esc(t)}</b><p>${list.filter(q=>topic(q)===t).length} ejercicios</p></div>`).join('')}</div></details></section>`;
+const control=s=>document.querySelector(s);
+control('#backHome').onclick=home;
+const update=()=>{
+chosen.topic=control('#ep-topic').value;
+chosen.mode=control('#ep-mode').value;
+state.preferences.mode=chosen.mode;
+state.preferences.size=Number(control('#ep-size').value);
+save();
+const n=eligible().length;
+control('#ep-count').textContent=n?`${n} preguntas disponibles con estos filtros. La sesión tendrá ${Math.min(n,state.preferences.size)}.`:'No quedan preguntas con estos filtros. Elegí otro tema o cambiá el modo.';
+control('#ep-start').disabled=!n;
+};
+['#ep-topic','#ep-mode','#ep-size'].forEach(id=>control(id).onchange=update);
+control('#ep-start').onclick=start;
+update();
+}
+function eligible(){
+return data[state.level][chosen.type].map((q,i)=>({q,i})).filter(({q,i})=>{
+if(chosen.topic!=='all'&&topic(q)!==chosen.topic)return false;
+const r=rec(state.level,chosen.type,i);
+return chosen.mode==='errors'?r?.correct===false:chosen.mode==='new'?!r:true;
+}).map(x=>x.i);
+}
+function start(){
+const ids=randomise(eligible());
+if(chosen.mode==='mixed')ids.sort((a,b)=>{
+const rank=i=>{const r=rec(state.level,chosen.type,i);return !r?0:r.correct?2:1};
+return rank(a)-rank(b);
+});
+if(!ids.length)return;
+session={level:state.level,type:chosen.type,ids:ids.slice(0,state.preferences.size),index:0,score:0,answered:false};
+question();
+}
+question=function(){
+stopVoice();const s=session,q=data[s.level][s.type][s.ids[s.index]];s.answered=false;
+const audio=q[5]?.audio||(s.type==='Escucha'?q[4]:'');
+app.innerHTML=`<section class="panel"><small>${s.level} · ${esc(s.type)} · ${s.index+1} DE ${s.ids.length}</small><div class="progress" style="margin:15px 0"><div style="width:${s.index/s.ids.length*100}%"></div></div><span class="ep-badge">${esc(topic(q))}</span>${s.type==='Lectura'?`<p class="reading" lang="en">${esc(q[4])}</p>`:''}${audio?`<p>Escuchá y elegí la respuesta.</p><button class="primary" id="listen">♫ Reproducir audio</button><details style="margin-top:16px"><summary>Ver transcripción</summary><p lang="en">${esc(audio)}</p></details>`:''}<h2 class="ep-q">${esc(q[0])}</h2><div class="options">${q[1].map((a,i)=>`<button data-answer="${i}">${String.fromCharCode(65+i)}. ${esc(a)}</button>`).join('')}</div><div id="feedback" aria-live="polite"></div><button id="leave">Volver a los temas</button></section>`;
+if(audio)document.querySelector('#listen').onclick=()=>speak(audio);
+document.querySelector('#leave').onclick=()=>choose(s.type,chosen?.topic||'all',chosen?.mode||'mixed');
+app.querySelectorAll('[data-answer]').forEach(b=>b.onclick=()=>answer(Number(b.dataset.answer)));
+};
+answer=function(i){
+const s=session;if(s.answered)return;
+s.answered=true;const id=s.ids[s.index],q=data[s.level][s.type][id],ok=i===q[2];
+state.answers++;if(ok){state.correct++;s.score++}
+const k=exerciseKey(s.level,s.type,id),old=state.practice[k]||{};
+state.practice[k]={...old,correct:ok,attempts:(old.attempts||0)+1,lastAt:Date.now()};save();
+app.querySelectorAll('[data-answer]').forEach(b=>{b.disabled=true;const n=Number(b.dataset.answer);if(n===q[2])b.classList.add('correct');else if(n===i)b.classList.add('wrong')});
+document.querySelector('#feedback').innerHTML=`<div class="feedback ep-explain"><b>${ok?'¡Muy bien!':'Vamos a aprender de este error.'}</b><p>Respuesta correcta: <strong>${esc(q[1][q[2]])}</strong></p>${esc(q[3])}</div><button class="primary" id="next">${s.index<s.ids.length-1?'Siguiente pregunta →':'Ver resultado →'}</button><br><br>`;
+document.querySelector('#next').onclick=()=>{if(s.index<s.ids.length-1){s.index++;question()}else finish()};
+};
+finish=function(){
+stopVoice();const s=session,t=s.type;
+app.innerHTML=`<section class="panel"><small>SESIÓN COMPLETADA · ${s.level}</small><h2>${s.score===s.ids.length?'Great work!':'Keep going!'}</h2><p>Acertaste <b>${s.score} de ${s.ids.length}</b> preguntas.</p><div class="stats"><span>${done(s.level,t)} / ${data[s.level][t].length} practicadas en ${esc(t)}</span><span>${wrong(s.level,t)} errores pendientes</span></div><p>Podés elegir otro tema, seguir con preguntas nuevas o volver a intentar los errores.</p><div class="ep-buttons"><button class="primary" id="again">Otra sesión</button><button id="review">Repasar errores de ${esc(t)}</button><button id="allskills">Todas las habilidades</button></div></section>`;
+document.querySelector('#again').onclick=()=>choose(t,chosen?.topic||'all',chosen?.mode||'mixed');
+document.querySelector('#review').onclick=()=>choose(t,'all','errors');
+document.querySelector('#allskills').onclick=home;
+};
+progress=function(){
+stopVoice();session=null;
+const stats=['B1','B2'].map(l=>levelStats(l)),seen=stats.reduce((n,s)=>n+s.done,0),right=stats.reduce((n,s)=>n+s.known,0);
+app.innerHTML=`<section class="panel"><h2>Cada paso cuenta.</h2><div class="stats"><span>${fmt(seen)} / ${fmt(allCount())} ejercicios practicados</span><span>${fmt(right)} correctos en su último intento</span><span>${fmt(state.answers)} respuestas acumuladas</span></div>${['B1','B2'].map((l,j)=>`<h3>Ruta ${l} · ${stats[j].done} / ${stats[j].total}</h3>${types.map(t=>`<p>${esc(t)}: ${done(l,t)} / ${data[l][t].length} practicados · ${wrong(l,t)} errores pendientes</p><div class="progress"><div style="width:${done(l,t)/data[l][t].length*100}%"></div></div>`).join('')}`).join('')}<h3>Repasar mis errores · ${state.level}</h3><div class="ep-buttons">${types.map(t=>`<button data-review="${t}">${t} (${wrong(state.level,t)})</button>`).join('')}</div><p class="ep-muted">El progreso se guarda en este navegador. No se sincroniza automáticamente entre dispositivos. Las respuestas acumuladas incluyen tus versiones anteriores.</p><button id="reset">Borrar mi progreso</button></section>`;
+app.querySelectorAll('[data-review]').forEach(b=>b.onclick=()=>choose(b.dataset.review,'all','errors'));
+document.querySelector('#reset').onclick=()=>{if(confirm('¿Borrar todas las respuestas y el progreso guardado en este navegador?')){state.answers=0;state.correct=0;state.completed=[];state.practice={};save();progress()}};
+};
+document.querySelector('#home').onclick=home;
+document.querySelector('#progress').onclick=progress;
+level.onchange=()=>{state.level=level.value;save();home()};
+save();home();
+window.englishPathApp={choose,eligible,start,count:allCount};
+})();
+
+</script>
+</body></html>
