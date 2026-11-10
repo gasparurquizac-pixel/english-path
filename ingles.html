@@ -2515,6 +2515,7 @@ const record=state.skills.speaking[taskKey]||{};
 const checks=app.querySelectorAll('[data-oral-check]');
 state.skills.speaking[taskKey]={...record,checks:[...checks].map(x=>x.checked),reflection:document.querySelector('#prod-reflection').value,done:done||!!record.done,lastAt:Date.now()};
 const ok=saveProgress();
+if(done&&ok)window.dispatchEvent(new CustomEvent('klevy:productive-completed',{detail:{type:'speaking',level:state.level,id}}));
 if(done)document.querySelector('#prod-speaking-result').textContent=ok?'Práctica registrada. Repetí la respuesta intentando mejorar una sola cosa.':'No se pudo guardar en este navegador. Tu práctica sigue disponible durante esta sesión.';
 };
 app.querySelectorAll('[data-oral-check]').forEach(x=>x.onchange=()=>saveOral(false));
@@ -2592,7 +2593,9 @@ document.querySelector('#prod-finish-writing').onclick=()=>{
 capture();if(!input.value.trim()){document.querySelector('#prod-writing-result').textContent='Escribí una respuesta antes de registrar la práctica.';return}
 if(!state.skills.writing[taskKey].checks.every(Boolean)){document.querySelector('#prod-writing-result').textContent='Revisá los tres puntos de la guía y marcalos cuando hayas comprobado tu texto.';return}
 state.skills.writing[taskKey].done=true;
-document.querySelector('#prod-writing-result').textContent=saveProgress()?'Texto y revisión registrados. Podés volver a editarlo.':'No se pudo guardar en este navegador. Conservá una copia del texto.';
+const stored=saveProgress();
+if(stored)window.dispatchEvent(new CustomEvent('klevy:productive-completed',{detail:{type:'writing',level:state.level,id}}));
+document.querySelector('#prod-writing-result').textContent=stored?'Texto y revisión registrados. Podés volver a editarlo.':'No se pudo guardar en este navegador. Conservá una copia del texto.';
 };
 document.querySelector('#prod-writing-back').onclick=document.querySelector('#prod-writing-list').onclick=()=>hub('writing');
 }
@@ -2618,8 +2621,167 @@ navButton.onclick=()=>hub('speaking');
 if('speechSynthesis'in window)window.speechSynthesis.addEventListener?.('voiceschanged',populateVoices);
 window.addEventListener('pagehide',cleanup);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){stopRecording();if(flushDraft)flushDraft()}});
-window.klevyProductive={hub,openSpeaking,openWriting,appendUnitPractice,cleanup,startRecording,stopRecording,words};
+window.klevyProductive={hub,openSpeaking,openWriting,appendUnitPractice,cleanup,startRecording,stopRecording,words,unitLinks:links};
 saveProgress();
+})();
+
+</script>
+
+
+<script>
+(()=>{
+if(window.klevyDaily)return;
+const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const intervals=[1,3,7,14,30],types=['Gramática','Vocabulario','Lectura','Escucha'];
+state.daily={version:1,plans:{},...state.daily};
+if(!state.daily.plans||typeof state.daily.plans!=='object')state.daily.plans={};
+let onDaily=false,storageHealthy=true;
+const today=(now=Date.now())=>{const d=new Date(now);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+const atDay=(now,days=0)=>{const d=new Date(now);d.setHours(0,0,0,0);d.setDate(d.getDate()+days);return d.getTime()};
+const planKey=(level,date=today())=>`${date}:${level}`;
+const exerciseKey=(type,index,level=state.level)=>`${level}:${type}:${index}`;
+const identity=item=>`${item.type}:${item.index}`;
+function persist(){try{localStorage.setItem('english-path-offline',JSON.stringify(state));storageHealthy=true;return true}catch{storageHealthy=false;return false}}
+function getSchedule(record){
+if(!record)return null;
+if(record.srs&&Number.isFinite(record.srs.dueAt))return record.srs;
+const last=Number(record.lastAt)||0;
+return {dueAt:record.correct?(last?atDay(last,1):0):0,streak:0,lastDay:last?today(last):'',legacy:true};
+}
+function nextSchedule(previous,correct,now=Date.now()){
+const s=previous?.srs||{},sameDay=s.lastDay===today(now);
+const streak=correct?(sameDay&&s.streak>0?s.streak:Math.min((Number(s.streak)||0)+1,intervals.length)):0;
+const days=correct?intervals[Math.max(0,streak-1)]:1;
+return {version:1,streak,intervalDays:days,dueAt:atDay(now,days),lastDay:today(now)};
+}
+function recommendedUnit(level){
+const list=window.englishLessons[level],last=state.study?.lastUnit?.[level];
+return list.find(u=>u.id===last&&!window.englishStudy.statsFor(level,u).complete)||list.find(u=>!window.englishStudy.statsFor(level,u).complete)||list[0];
+}
+function pool(level){
+const rows=[];
+for(const type of types)data[level][type].forEach((q,index)=>{
+const record=state.practice[exerciseKey(type,index,level)],schedule=getSchedule(record);
+rows.push({type,index,q,record,schedule});
+});
+return rows;
+}
+const hash=text=>[...text].reduce((n,c)=>((n*31+c.charCodeAt(0))>>>0),17);
+function chooseBalanced(rows,count,seed){
+const selected=[],remaining=[...rows].sort((a,b)=>(a.schedule?.dueAt||0)-(b.schedule?.dueAt||0)||hash(seed+identity(a))-hash(seed+identity(b)));
+const counts={};
+while(remaining.length&&selected.length<count){
+let i=remaining.findIndex(x=>(counts[x.type]||0)<2);if(i<0)i=0;
+const [row]=remaining.splice(i,1);selected.push(row);counts[row.type]=(counts[row.type]||0)+1;
+}
+return selected;
+}
+function makePlan(level,date=today(),now=Date.now()){
+const unit=recommendedUnit(level),all=pool(level),chosen=[],seen=new Set();
+const take=(rows,n,reason)=>{for(const r of chooseBalanced(rows.filter(x=>!seen.has(identity(x))),n,date+level+reason)){seen.add(identity(r));chosen.push({type:r.type,index:r.index,reason})}};
+const errors=all.filter(x=>x.record?.correct===false&&x.schedule.dueAt<=now);
+const due=all.filter(x=>x.record?.correct===true&&x.schedule.dueAt<=now);
+take(errors,2,'Un error para revisar');take(due,3,'Un tema para retomar');
+const learned=window.englishLessons[level].filter(u=>state.study?.read?.[`${level}:${u.id}`]);
+const relevant=[unit,...learned];
+const introduced=all.filter(x=>!x.record&&relevant.some(u=>u.practice[x.type]?.includes(x.q[5]?.topic)));
+take(introduced,6-chosen.length,'Una pregunta nueva de tu ruta');
+if(chosen.length<6)take([...errors,...due],6-chosen.length,'Un repaso pendiente');
+if(chosen.length<6&&introduced.length===0)take(all.filter(x=>!x.record),6-chosen.length,'Una pregunta nueva');
+const links=window.klevyProductive.unitLinks[level]?.[unit.id];
+const oral=links?.[0]||window.klevyPracticeTasks.speaking[level][0].id;
+const drafts=window.klevyPracticeTasks.writing[level].map(t=>({id:t.id,record:state.skills.writing[`${level}:${t.id}`]})).filter(x=>x.record?.text?.trim());
+drafts.sort((a,b)=>Number(!!a.record.done)-Number(!!b.record.done)||(Number(a.record.savedAt)||0)-(Number(b.record.savedAt)||0));
+return {version:1,date,level,createdAt:now,unitId:unit.id,items:chosen,answers:{},speakingId:oral,writingId:drafts[0]?.id||links?.[1]||window.klevyPracticeTasks.writing[level][0].id,speakingDone:false,writingDone:false};
+}
+function validPlan(plan,level,date){
+return plan?.version===1&&plan.level===level&&plan.date===date&&Array.isArray(plan.items)&&plan.items.every(x=>types.includes(x.type)&&Number.isInteger(x.index)&&!!data[level][x.type][x.index])&&window.klevyPracticeTasks.speaking[level].some(t=>t.id===plan.speakingId)&&window.klevyPracticeTasks.writing[level].some(t=>t.id===plan.writingId);
+}
+function getPlan(level=state.level,date=today()){
+const key=planKey(level,date);let p=state.daily.plans[key];
+if(!validPlan(p,level,date)){p=makePlan(level,date);state.daily.plans[key]=p;const keys=Object.keys(state.daily.plans).sort();for(const old of keys.slice(0,Math.max(0,keys.length-60)))delete state.daily.plans[old];persist()}
+if(!p.answers||typeof p.answers!=='object')p.answers={};return p;
+}
+const answered=plan=>plan.items.filter(x=>!!plan.answers[identity(x)]).length;
+const allDone=plan=>answered(plan)===plan.items.length&&plan.speakingDone&&plan.writingDone;
+function dueCounts(level){const rows=pool(level).filter(x=>x.record&&x.schedule.dueAt<=Date.now());return {errors:rows.filter(x=>!x.record.correct).length,review:rows.filter(x=>x.record.correct).length}}
+const nav=document.querySelector('nav'),button=document.createElement('button');button.id='daily-nav';button.textContent='Mi día';nav.prepend(button);
+function navState(){for(const id of ['daily-nav','study-route','home','productive-nav','progress']){const b=document.querySelector('#'+id);if(id==='daily-nav')b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')}}
+const style=document.createElement('style');style.textContent=`nav{grid-template-columns:repeat(5,minmax(0,1fr))}.daily-hero{background:#e7eddc}.daily-grid{display:grid;gap:16px}.daily-card{background:white;border:1px solid #dce3d5;border-radius:14px;padding:22px}.daily-card h3{margin:8px 0;font-size:19px}.daily-eyebrow{font-size:11px;letter-spacing:.07em;color:#63766a}.daily-meta{font-size:13px;color:#63766a;line-height:1.7}.daily-actions{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}.daily-done{background:#f0f7eb}.daily-list{font-size:13px;line-height:1.85;padding-left:20px}.daily-session-banner{background:#e7eddc;border-radius:10px;padding:14px;margin-bottom:16px;line-height:1.6}.daily-return{margin-top:10px}.daily-success{background:#e1efda;border:1px solid #b8d1a5;border-radius:12px;padding:18px}.daily-stat-line{line-height:1.8}.daily-info{margin-top:20px;font-size:13px;line-height:1.7;color:#63766a}@media(max-width:720px){nav{grid-template-columns:repeat(3,minmax(0,1fr))}#productive-nav{grid-column:span 2}nav button{font-size:13px}.daily-actions button{width:100%}}`;
+document.head.appendChild(style);
+function renderDay(message=''){
+window.klevyProductive.cleanup();onDaily=true;session=null;navState();
+const p=getPlan(),counts=dueCounts(state.level),unit=window.englishLessons[state.level].find(u=>u.id===p.unitId),n=answered(p);
+const oral=window.klevyPracticeTasks.speaking[state.level].find(t=>t.id===p.speakingId),writing=window.klevyPracticeTasks.writing[state.level].find(t=>t.id===p.writingId);
+const hasDraft=!!state.skills.writing[`${state.level}:${writing.id}`]?.text?.trim();
+const complete=allDone(p),doneBlocks=Number(n===p.items.length)+Number(p.speakingDone)+Number(p.writingDone);
+app.innerHTML=`<section class="panel daily-hero"><span class="study-kicker">MI PRÁCTICA DE HOY · ${state.level}</span><h2>${complete?'Hoy ya practicaste. ¡Buen trabajo!':'Un poco de repaso. Una respuesta propia.'}</h2><p>Repasá lo aprendido y usalo al hablar y escribir. Podés hacer una parte y retomar el resto después.</p><div class="stats"><span>${doneBlocks} / 3 pasos realizados</span><span>${counts.errors} ${counts.errors===1?'error':'errores'} y ${counts.review} ${counts.review===1?'repaso':'repasos'} para hoy</span></div><div class="progress"><div style="width:${doneBlocks/3*100}%"></div></div><p class="daily-meta">${esc(new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'}))} · Ritmo orientativo: 15–20 minutos. La fecha sigue la de este dispositivo.</p>${!storageHealthy?'<p role="alert" class="daily-success">No se pudo guardar en este navegador. Podés practicar, pero esta sesión podría perderse al cerrar.</p>':''}${message?`<p class="daily-success" role="status">${esc(message)}</p>`:''}${complete?'<p class="daily-success">Terminaste la propuesta de hoy. Mañana revisaremos qué conviene retomar. También podés seguir con práctica libre.</p>':''}</section><section class="daily-grid"><article class="daily-card ${n===p.items.length?'daily-done':''}"><span class="daily-eyebrow">PASO 1 · RECORDAR</span><h3>${n===p.items.length?'✓ Repaso de preguntas realizado':'Retomá lo que más te sirve'}</h3><p>${p.items.length?`${n} de ${p.items.length} ${p.items.length===1?'pregunta respondida':'preguntas respondidas'}. Mezclamos errores pendientes, repasos y contenido de tu ruta según lo que haya disponible.`:'Hoy no hay preguntas nuevas o vencidas para seleccionar. Podés continuar con las actividades de expresión.'}</p>${p.items.length?`<div class="daily-actions"><button id="daily-start" class="primary" ${n===p.items.length?'disabled':''}>${n?'Continuar repaso':'Empezar repaso'} →</button></div><details><summary>¿Qué vamos a repasar?</summary><ul class="daily-list">${p.items.map(x=>`<li>${esc(x.type)} · ${esc(data[p.level][x.type][x.index][5]?.topic||'Repaso general')} · ${esc(x.reason)} ${p.answers[identity(x)]?'· ✓ Respondida':''}</li>`).join('')}</ul></details>`:''}</article><article class="daily-card ${p.speakingDone?'daily-done':''}"><span class="daily-eyebrow">PASO 2 · EXPRESARTE EN VOZ ALTA</span><h3>${p.speakingDone?'✓ ':''}${esc(oral.title)}</h3><p>Escuchá la pregunta, respondé con tus ideas y elegí una cosa para mejorar. Podés grabarte. ${hash(p.date)%2?'Hoy probá también la pregunta de seguimiento.':'Después, repetí la respuesta con una mejora concreta.'}</p><p class="daily-meta">Registrá la práctica desde la actividad para completar este paso. Es una autoevaluación, no una nota de pronunciación.</p><button id="daily-speaking" class="primary">${p.speakingDone?'Volver a practicar':'Ir a mi práctica oral'} →</button></article><article class="daily-card ${p.writingDone?'daily-done':''}"><span class="daily-eyebrow">PASO 3 · REVISAR Y ESCRIBIR</span><h3>${p.writingDone?'✓ ':''}${esc(writing.title)}</h3><p>${hasDraft?'Retomá tu borrador. Comprobá los puntos de la guía y mejorá una frase o la organización.':'No tenés un borrador de esta actividad todavía. Escribí una primera versión; después comparala con la guía y el ejemplo.'}</p><p class="daily-meta">Terminá con “Terminé y revisé mi texto” para registrar este paso. La revisión no es una corrección automática.</p><button id="daily-writing" class="primary">${hasDraft?'Revisar mi borrador':'Empezar mi texto'} →</button></article></section><section class="panel"><h3>Una explicación que puede ayudarte</h3><p>${esc(unit?.title||'Continuar la ruta de estudio')}</p><button id="daily-theory">Leer la explicación →</button><p class="daily-info">Cuando acertás, los repasos se espacian: 1, 3, 7, 14 y 30 días. Un error vuelve al día siguiente. Podés volver a practicarlo antes desde “Mi progreso”. La sesión de hoy queda guardada; recargar no cambia sus preguntas.</p></section>`;
+const start=document.querySelector('#daily-start');if(start)start.onclick=startReview;
+document.querySelector('#daily-speaking').onclick=()=>openProductive('speaking',p);
+document.querySelector('#daily-writing').onclick=()=>openProductive('writing',p);
+document.querySelector('#daily-theory').onclick=()=>{onDaily=false;button.removeAttribute('aria-current');window.englishStudy.openUnit(p.unitId)};
+}
+function startReview(){
+window.klevyProductive.cleanup();const p=getPlan(),remaining=p.items.filter(x=>!p.answers[identity(x)]);if(!remaining.length){renderDay();return}
+session={level:p.level,type:remaining[0].type,ids:remaining.map(x=>x.index),index:0,score:0,answered:false,dailyItems:remaining,dailyKey:planKey(p.level,p.date)};
+onDaily=true;question();
+}
+function addReturnBanner(text){
+const panel=document.createElement('section');panel.className='daily-session-banner';panel.innerHTML=`<b>Mi práctica de hoy</b><p>${esc(text)}</p><button id="daily-return" class="daily-return">← Volver a mi día</button>`;app.prepend(panel);document.querySelector('#daily-return').onclick=()=>renderDay();
+}
+function openProductive(type,p){
+state.daily.pending={planKey:planKey(p.level,p.date),level:p.level,type,id:type==='speaking'?p.speakingId:p.writingId};persist();onDaily=false;button.removeAttribute('aria-current');
+if(type==='speaking')window.klevyProductive.openSpeaking(p.speakingId);else window.klevyProductive.openWriting(p.writingId);
+addReturnBanner(type==='speaking'?'Escuchá, respondé y usá “Registrar mi práctica” al terminar.':'Revisá tu texto y registralo con “Terminé y revisé mi texto”.');
+}
+window.addEventListener('klevy:productive-completed',event=>{
+const d=event.detail,pending=state.daily.pending;if(!pending||pending.type!==d.type||pending.id!==d.id||pending.level!==d.level)return;
+const p=state.daily.plans[pending.planKey];if(!p)return;
+p[`${d.type}Done`]=true;if(allDone(p))p.completedAt=Date.now();persist();
+let el=document.querySelector('#daily-production-notice');if(!el){el=document.createElement('section');el.id='daily-production-notice';el.className='panel daily-success';app.appendChild(el)}
+el.innerHTML='<p>Guardaste este paso de tu práctica de hoy.</p><button id="daily-back-after-save">Volver a mi día →</button>';
+document.querySelector('#daily-back-after-save').onclick=()=>renderDay();
+});
+const baseQuestion=question;
+question=function(){
+if(session?.dailyItems){const item=session.dailyItems[session.index];session.type=item.type;session.ids=session.dailyItems.map(x=>x.index)}
+baseQuestion();
+if(session?.dailyItems){onDaily=true;navState();const leave=document.querySelector('#leave');if(leave){leave.textContent='Guardar y volver a mi día';leave.onclick=()=>renderDay()}}
+};
+const baseAnswer=answer;
+answer=function(choice){
+if(!session||session.answered)return;
+const s=session,key=exerciseKey(s.type,s.ids[s.index],s.level),previous=state.practice[key],wasAnswers=state.answers;
+const correct=choice===data[s.level][s.type][s.ids[s.index]][2];
+baseAnswer(choice);
+if(state.answers===wasAnswers)return;
+state.practice[key].srs=nextSchedule(previous,correct);
+if(s.dailyKey){const p=state.daily.plans[s.dailyKey];if(p){p.answers[identity({type:s.type,index:s.ids[s.index]})]={correct,at:Date.now()};if(allDone(p))p.completedAt=Date.now()}}
+if(!persist()){const warning=document.createElement('p');warning.textContent='No se pudo guardar esta respuesta en el navegador. La práctica sigue disponible mientras esta página permanezca abierta.';document.querySelector('#feedback').appendChild(warning)}
+};
+const baseFinish=finish;
+finish=function(){if(session?.dailyKey){renderDay('Repaso guardado. Ahora podés practicar una respuesta oral y revisar tu texto.');return}baseFinish()};
+for(const id of ['study-route','home','productive-nav','progress']){
+const navEl=document.querySelector('#'+id),old=navEl.onclick;
+navEl.onclick=event=>{onDaily=false;button.removeAttribute('aria-current');return old?.(event)};
+}
+const previousLevel=level.onchange;
+level.onchange=event=>{
+if(onDaily){window.klevyProductive.cleanup();state.level=level.value;persist();renderDay()}else previousLevel?.(event);
+};
+const previousProgress=progress;
+progress=function(){
+onDaily=false;button.removeAttribute('aria-current');previousProgress();
+const section=document.createElement('section');section.className='panel';
+const counts=dueCounts(state.level),completed=Object.values(state.daily.plans).filter(p=>p.level===state.level&&allDone(p));
+section.innerHTML=`<h2>Tu repaso espaciado · ${state.level}</h2><p>Para hoy: ${counts.errors} ${counts.errors===1?'error':'errores'} y ${counts.review} ${counts.review===1?'repaso':'repasos'}.</p><p>${completed.length} propuestas diarias realizadas en el historial guardado.</p><p class="daily-meta">Los intervalos aumentan con los aciertos. Equivocarte no borra lo aprendido: vuelve a proponerse antes. Repetir un acierto el mismo día no aumenta varias veces el intervalo.</p><button id="daily-from-progress">Ver mi práctica de hoy →</button>`;app.appendChild(section);
+document.querySelector('#daily-from-progress').onclick=()=>renderDay();
+document.querySelector('#reset').onclick=()=>{if(confirm('¿Borrar respuestas, ruta, borradores, prácticas y planificación de repaso en este navegador?')){window.klevyProductive.cleanup();state.answers=0;state.correct=0;state.completed=[];state.practice={};state.study={lastUnit:{},read:{},checks:{}};state.skills={speaking:{},writing:{}};state.daily={version:1,plans:{}};persist();progress()}};
+};
+document.querySelector('#progress').onclick=progress;
+button.onclick=()=>renderDay();
+window.klevyDaily={today,atDay,getSchedule,nextSchedule,makePlan,getPlan,renderDay,startReview,dueCounts,allDone};
+renderDay();
 })();
 
 </script>
