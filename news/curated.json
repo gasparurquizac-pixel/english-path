@@ -1,0 +1,17 @@
+{
+ "https://www.nasa.gov/image-article/chapea-crew-leaves-a-mark/": {
+  "checkedOn":"2026-11-10",
+  "B1":{
+   "text":"A NASA crew spent 378 days living in isolation in Houston, Texas. They stayed in a special habitat on Earth, not on Mars. They left the habitat on October 31, 2026.\n\nDuring the simulation, the crew arranged photos around a boot print in Mars-like sand. NASA published the image on November 10. Health and performance information from the simulation may help researchers reduce risks for future space missions.",
+   "question":["Where did the crew live during the simulation?",["In a habitat on Earth","On the surface of Mars","In orbit around the Moon"],0,"La experiencia fue una simulación en un hábitat en Houston, en la Tierra."],
+   "oral":"Would you like to take part in a long simulation like this? Give your opinion, one reason and one detail from the reading.",
+   "model":"I would find a long simulation difficult because I enjoy spending time outdoors. The crew lived in isolation for 378 days. However, I think this kind of research could help people prepare for future missions."
+  },
+  "B2":{
+   "text":"After 378 days of isolation at NASA’s Johnson Space Center in Houston, the CHAPEA Mission 2 crew left their habitat on October 31, 2026. An image published on November 10 shows photographs arranged around a boot print in simulated Martian sand during the mission.\n\nThe simulation produced health and performance data that may help researchers develop ways to reduce human spaceflight risks. This is a potential contribution to future Artemis and Moon Base missions; it is not a claim that every risk has been resolved, nor evidence that the crew travelled to Mars.",
+   "question":["Which conclusion is supported by the text?",["The data may inform methods for reducing spaceflight risks","The simulation has eliminated all risks of a Mars mission","The crew collected this information while living on Mars"],0,"El texto expresa una utilidad potencial de los datos. No afirma que los riesgos estén resueltos ni que la tripulación haya ido a Marte."],
+   "oral":"What can an Earth-based simulation contribute to space exploration, and what might it fail to reproduce? Distinguish a reported fact from your own interpretation.",
+   "model":"The reported fact is that the crew spent 378 days in isolation and produced health and performance data. In my view, that can help researchers examine how people cope with prolonged confinement. However, I would want to know which conditions the simulation reproduced before assuming its results apply to every aspect of a space mission."
+  }
+ }
+}

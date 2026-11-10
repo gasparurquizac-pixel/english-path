@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "selectionDay": "2026-11-10",
+  "checkedAt": "2026-11-10T15:33:10.915Z",
+  "article": {
+    "id": "https://www.nasa.gov/image-article/chapea-crew-leaves-a-mark/",
+    "title": "CHAPEA Crew Leaves a Mark",
+    "url": "https://www.nasa.gov/image-article/chapea-crew-leaves-a-mark/",
+    "publisher": "NASA",
+    "publishedAt": "2026-11-10T14:57:55.000Z",
+    "excerpt": "The Crew Health and Performance Exploration Analog (CHAPEA) Mission 2 crew arranged photos around a boot print in the simulated Martian sand outside their habitat on Aug. 31, 2026. The crew recently exited their habitat on Saturday, Oct. 31, after 378 days of isolation in a facility at the agency’s Johnson Space Center in Houston.",
+    "textKind": "publisher-excerpt",
+    "feed": "https://www.nasa.gov/feed/"
+  }
+}
