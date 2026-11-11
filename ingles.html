@@ -208,18 +208,85 @@ B2:{
 
 const app=document.querySelector("#app");
 const level=document.querySelector("#level");
+// Keep learner data intact when reading fails or a stale tab tries to save.
+window.klevyStorage=(()=>{
+const key='english-path-offline';
+let lastRaw=null,originalRaw=null,readable=false,issue='',getState=()=>null;
+const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
+function valid(value){
+ if(!object(value))return false;
+ for(const name of ['answers','correct'])if(name in value&&(!Number.isFinite(value[name])||value[name]<0))return false;
+ if('completed'in value&&(!Array.isArray(value.completed)||!value.completed.every(x=>typeof x==='string')))return false;
+ const maps={practice:[],preferences:[],study:['lastUnit','read','checks'],skills:['speaking','writing'],daily:['plans'],notebook:[],context:['lessons'],variety:['records'],conversations:['records','drafts'],listening:['records','drafts'],news:['selections','drafts','records']};
+ for(const [name,children]of Object.entries(maps)){
+  if(!(name in value))continue;
+  if(!object(value[name]))return false;
+  for(const child of children)if(child in value[name]&&!object(value[name][child]))return false;
+ }
+ if(value.variety&&'seen'in value.variety&&!Array.isArray(value.variety.seen))return false;
+ const records=[value.practice,value.notebook,value.skills?.speaking,value.skills?.writing,value.context?.lessons,value.variety?.records,value.conversations?.records,value.conversations?.drafts,value.listening?.records,value.listening?.drafts,value.news?.records,value.news?.drafts];
+ for(const map of records)if(map)for(const record of Object.values(map)){
+  if(!object(record))return false;
+  for(const name of ['checks','help','plays'])if(name in record&&!Array.isArray(record[name]))return false;
+  if('answers'in record&&!Array.isArray(record.answers)&&!object(record.answers))return false;
+  for(const name of ['text','note','reflection','term','meaning','sentence','example','opinion','comprehension'])if(name in record&&typeof record[name]!=='string')return false;
+ }
+ return true;
+}
+const banner=document.createElement('aside');banner.id='storage-warning';banner.className='panel';banner.hidden=true;banner.setAttribute('aria-label','Estado del guardado');
+banner.innerHTML='<p id="storage-message" role="status" aria-live="polite"></p><div class="storage-actions"><button id="storage-retry" type="button">Reintentar guardado</button><button id="storage-copy" type="button">Descargar esta sesión</button><button id="storage-original" type="button">Descargar datos anteriores</button><button id="storage-reload" type="button">Recargar progreso</button></div><p id="storage-copy-status" role="status"></p>';
+document.querySelector('#app').before(banner);
+const style=document.createElement('style');style.textContent='#storage-warning[hidden]{display:none}#storage-warning{border:2px solid var(--ux-focus,#a35f17);padding:16px;margin:18px 0}#storage-warning p{font-size:14px;margin:0 0 12px;line-height:1.7}#storage-warning .storage-actions{display:flex;gap:8px;flex-wrap:wrap}#storage-warning button{font-size:13px;min-height:44px}#storage-copy-status:empty{display:none}';document.head.append(style);
+function report(kind){
+ issue=kind;banner.hidden=!kind;
+ const text={blocked:'No se pudo guardar el progreso en este navegador. Podés seguir practicando, pero descargá una copia de esta sesión antes de cerrar. Si liberaste espacio o habilitaste el guardado, volvé a intentar.',corrupt:'No pudimos leer el progreso guardado. Los datos anteriores se conservan sin cambios. Podés descargarlos y practicar durante esta sesión; lo nuevo no se guardará sobre ellos.',conflict:'El progreso cambió en otra pestaña. Esta pestaña detuvo el guardado para no sobrescribirlo. Si practicaste acá, descargá esta sesión antes de recargar el progreso actualizado.'};
+ document.querySelector('#storage-message').textContent=text[kind]||'';
+ document.querySelector('#storage-retry').hidden=kind!=='blocked';
+ document.querySelector('#storage-original').hidden=kind!=='corrupt';
+ document.querySelector('#storage-reload').hidden=kind==='blocked';
+}
+function load(){
+ try{lastRaw=localStorage.getItem(key);originalRaw=lastRaw;readable=true}catch{report('blocked');return null}
+ if(lastRaw===null)return null;
+ try{const saved=JSON.parse(lastRaw);if(!valid(saved))throw Error('invalid-state');return saved}catch{report('corrupt');return null}
+}
+function write(value,replace=false){
+ if(!replace&&(issue==='corrupt'||issue==='conflict'))return false;
+ try{
+  const actual=localStorage.getItem(key);
+  if(!replace&&((readable&&actual!==lastRaw)||(!readable&&actual!==null))){report('conflict');return false}
+  const raw=JSON.stringify(value);
+  if(raw!==actual)localStorage.setItem(key,raw);
+  lastRaw=raw;originalRaw=raw;readable=true;report('');return true;
+ }catch{report('blocked');return false}
+}
+function download(original=false){
+ if(!original)window.klevyProductive?.flush?.();
+ const raw=original?originalRaw:JSON.stringify(getState(),null,2);
+ if(typeof raw!=='string')return;
+ const url=URL.createObjectURL(new Blob([raw],{type:'application/json'})),link=document.createElement('a');
+ link.href=url;link.download=original?'klevy-datos-anteriores.json':'klevy-progreso-'+new Date().toISOString().slice(0,10)+'.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
+ document.querySelector('#storage-copy-status').textContent='Se solicitó la descarga. Conservá el archivo como copia de tus datos; no contiene grabaciones de audio.';
+}
+document.querySelector('#storage-retry').onclick=()=>{window.klevyProductive?.flush?.();write(getState())};
+document.querySelector('#storage-copy').onclick=()=>download();
+document.querySelector('#storage-original').onclick=()=>download(true);
+document.querySelector('#storage-reload').onclick=()=>location.reload();
+window.addEventListener('storage',event=>{
+ if(event.key!==key&&event.key!==null)return;
+ try{if(event.storageArea===localStorage&&localStorage.getItem(key)!==lastRaw&&issue!=='corrupt')report('conflict')}catch{if(!issue)report('blocked')}
+});
+return {load,write,download,bind:getter=>{getState=getter},valid,get status(){return issue||'saved'}};
+})();
+
 let state={answers:0,correct:0,completed:[],level:"B1"};
-try{
- const saved=JSON.parse(localStorage.getItem("english-path-offline"));
- if(saved)state={...state,...saved};
-}catch{}
+const restoredProgress=window.klevyStorage.load();
+if(restoredProgress)state={...state,...restoredProgress};
+window.klevyStorage.bind(()=>state);
 if(!data[state.level])state.level="B1";
 level.value=state.level;
 let session=null;
-
-function save(){
- try{localStorage.setItem("english-path-offline",JSON.stringify(state))}catch{}
-}
+function save(){return window.klevyStorage.write(state)}
 function stopVoice(){
  if("speechSynthesis" in window)speechSynthesis.cancel();
 }
@@ -2472,7 +2539,7 @@ const words=text=>text.trim().split(/\s+/).filter(x=>/[a-zA-Z0-9À-ž]/.test(x))
 let active=false,tab='speaking',mountedKey='',recorder=null,micStream=null,recordURL='',recordAudio=null,clock=null,recordToken=0;
 let pendingSave=null,flushDraft=null;
 function saveProgress(){
-try{localStorage.setItem('english-path-offline',JSON.stringify(state));return true}catch{return false}
+return save()
 }
 function status(message){const el=document.querySelector('#productive-status');if(el)el.textContent=message}
 function clearClock(){if(clock){clearInterval(clock);clock=null}}
@@ -2667,7 +2734,7 @@ navButton.onclick=()=>hub('speaking');
 if('speechSynthesis'in window)window.speechSynthesis.addEventListener?.('voiceschanged',populateVoices);
 window.addEventListener('pagehide',cleanup);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){stopRecording();if(flushDraft)flushDraft()}});
-window.klevyProductive={hub,openSpeaking,openWriting,appendUnitPractice,cleanup,startRecording,stopRecording,words,unitLinks:links,prepareRecorder:key=>{mountedKey=key;active=true}};
+window.klevyProductive={flush:()=>{if(pendingSave){clearTimeout(pendingSave);pendingSave=null}if(flushDraft)flushDraft()},hub,openSpeaking,openWriting,appendUnitPractice,cleanup,startRecording,stopRecording,words,unitLinks:links,prepareRecorder:key=>{mountedKey=key;active=true}};
 saveProgress();
 })();
 
@@ -2687,7 +2754,7 @@ const atDay=(now,days=0)=>{const d=new Date(now);d.setHours(0,0,0,0);d.setDate(d
 const planKey=(level,date=today())=>`${date}:${level}`;
 const exerciseKey=(type,index,level=state.level)=>`${level}:${type}:${index}`;
 const identity=item=>`${item.type}:${item.index}`;
-function persist(){try{localStorage.setItem('english-path-offline',JSON.stringify(state));storageHealthy=true;return true}catch{storageHealthy=false;return false}}
+function persist(){storageHealthy=save();return storageHealthy}
 function getSchedule(record){
 if(!record)return null;
 if(record.srs&&Number.isFinite(record.srs.dueAt))return record.srs;
@@ -3117,7 +3184,7 @@ const E=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt
 const consultationHistory=new Map();
 const materials=window.klevyContextMaterials,root=document.querySelector('#app');
 state.notebook=state.notebook||{};state.context=state.context||{lessons:{}};
-function persist(){save()}
+function persist(){return save()}
 function activate(){root.querySelectorAll('audio').forEach(a=>a.pause());window.klevyProductive.cleanup();window.klevyWordHelp?.close();document.querySelectorAll('nav button').forEach(b=>b.removeAttribute('aria-current'));document.querySelector('#context-nav').setAttribute('aria-current','page')}
 function shell(title,body){root.innerHTML=`<section class="panel ctx"><p class="small">INGLÉS EN CONTEXTO · ${E(state.level)}</p><h2>${E(title)}</h2><div class="ctx-actions"><button id="ctx-materials">Materiales</button><button id="ctx-notebook">Mi cuaderno (${Object.keys(state.notebook).length})</button></div>${body}</section>`;document.querySelector('#ctx-materials').onclick=hub;document.querySelector('#ctx-notebook').onclick=notebook}
 function hub(){activate();shell('Comprender y usar el idioma',`<p>Fragmentos originales con fuente, preguntas de comprensión y un resumen oral. Niveles orientativos; las actividades fueron creadas para esta app.</p><div class="ctx-grid">${materials.filter(m=>m.level===state.level).map(m=>`<article><p class="small">${E(m.category)} · ${E(m.source)}</p><h3>${E(m.title)}</h3><p>${E(m.goal)}</p><button data-material="${m.id}">Abrir actividad →</button></article>`).join('')}</div><p class="small">Tocá una palabra del texto para consultarla y guardarla con su contexto. Las consultas y los repasos se registran por separado.</p>`);root.querySelectorAll('[data-material]').forEach(b=>b.onclick=()=>lesson(b.dataset.material))}
@@ -3126,8 +3193,8 @@ function lesson(id){activate();const m=materials.find(x=>x.id===id);if(!m)return
 let position=0;document.querySelector('#ctx-listen').onclick=()=>{if(document.querySelector('#prod-stop-record')?.disabled===false){document.querySelector('#productive-status').textContent='Terminá la grabación antes de escuchar.';return}root.querySelectorAll('audio').forEach(a=>a.pause());stopVoice();position=0;function next(){if(position>=texts.length||!document.querySelector('#ctx-segment-0'))return;const el=document.querySelector('#ctx-segment-'+position);const u=new SpeechSynthesisUtterance(texts[position]);u.lang='en-GB';u.rate=.85;u.onstart=()=>el.classList.add('ctx-active');u.onend=()=>{el.classList.remove('ctx-active');position++;next()};u.onerror=()=>el.classList.remove('ctx-active');speechSynthesis.speak(u)}if('speechSynthesis'in window)next();else document.querySelector('#ctx-save-status').textContent='La lectura de voz no está disponible en este navegador.'};document.querySelector('#ctx-silence').onclick=()=>{stopVoice();root.querySelectorAll('.ctx-active').forEach(x=>x.classList.remove('ctx-active'))};
 root.querySelectorAll('[data-expression]').forEach(b=>b.onclick=()=>{const c=m.collocations[+b.dataset.expression];entry(c.term,c.meaning,c.quote,m.id);b.textContent='Guardada ✓'});
 root.querySelectorAll('[data-question]').forEach(b=>b.onclick=()=>{const i=+b.dataset.question,j=+b.dataset.choice;rec.answers[i]=j;persist();root.querySelectorAll(`[data-question="${i}"]`).forEach(x=>x.disabled=true);document.querySelector('#ctx-feedback-'+i).textContent=(j===m.questions[i][2]?'Correcto. ':'Para repasar. ')+m.questions[i][3]});
-document.querySelector('#ctx-notes').oninput=e=>{rec.notes=e.target.value;persist()};document.querySelector('#ctx-oral').onchange=e=>{rec.oral=e.target.checked;persist();document.querySelector('#ctx-save-status').textContent='Autoevaluación guardada.'};window.klevyProductive.prepareRecorder('context:'+id);document.querySelector('#prod-record').onclick=()=>{root.querySelectorAll('audio').forEach(a=>a.pause());window.klevyProductive.startRecording('context:'+id)};root.querySelectorAll('audio').forEach(a=>a.onplay=()=>{stopVoice();if(document.querySelector('#prod-stop-record')?.disabled===false){a.pause();document.querySelector('#productive-status').textContent='Terminá la grabación antes de reproducir audio.'}});document.querySelector('#prod-stop-record').onclick=()=>window.klevyProductive.stopRecording();document.querySelector('#prod-discard').onclick=()=>{window.klevyProductive.cleanup();window.klevyProductive.prepareRecorder('context:'+id);document.querySelector('#prod-recording').hidden=true};}
-function notebook(){activate();const items=Object.entries(state.notebook),now=Date.now();shell('Mi cuaderno de expresiones',`<p>Guardá frases útiles y escribí un ejemplo propio. El repaso usa tu autoevaluación: intentá recordar el significado antes de mostrarlo.</p>${items.length?'':'<p>Todavía no guardaste expresiones. Abrí un material o consultá una palabra de cualquier ejercicio.</p>'}${items.map(([key,v],i)=>{const m=materials.find(m=>m.id===v.materialId)||v.source;return `<article data-entry="${i}"><h3 lang="en">${E(v.term)}</h3><p lang="en">${E(v.sentence||'')}</p>${m?`<p class="small">Fuente: <a href="${E(m.url)}" target="_blank" rel="noopener noreferrer">${E(m.source)}</a></p>`:''}<p class="small">${v.consultations||0} consultas${v.lastConsulted?' (última: '+new Date(v.lastConsulted).toLocaleDateString('es-AR')+')':''} · ${v.reviews||0} repasos · ${!v.srs||v.srs.dueAt<=now?'Para repasar':`Próximo repaso: ${new Date(v.srs.dueAt).toLocaleDateString('es-AR')}`}</p><details><summary>Mostrar significado</summary><label>Significado<input data-meaning="${i}" value="${E(v.meaning)}"></label><div class="ctx-actions"><button data-recall="${i}" data-success="yes">Lo recordé</button><button data-recall="${i}" data-success="no">Necesito repasarlo</button></div></details><label>Mi propio ejemplo<textarea data-example="${i}" rows="2" placeholder="Write your own sentence…">${E(v.example)}</textarea></label><button data-delete="${i}">Eliminar expresión</button><p class="ctx-status" role="status"></p></article>`}).join('')}`);root.querySelectorAll('[data-meaning]').forEach(el=>el.oninput=()=>{items[+el.dataset.meaning][1].meaning=el.value;persist()});root.querySelectorAll('[data-example]').forEach(el=>el.oninput=()=>{items[+el.dataset.example][1].example=el.value;persist()});root.querySelectorAll('[data-recall]').forEach(b=>b.onclick=()=>{const v=items[+b.dataset.recall][1];v.srs=window.klevyDaily.nextSchedule(v,b.dataset.success==='yes',Date.now());v.reviews=(v.reviews||0)+1;persist();b.closest('article').querySelector('.ctx-status').textContent='Repaso guardado. Próximo: '+new Date(v.srs.dueAt).toLocaleDateString('es-AR');b.closest('details').querySelectorAll('button').forEach(x=>x.disabled=true)});root.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{if(confirm('¿Eliminar esta expresión del cuaderno?')){delete state.notebook[items[+b.dataset.delete][0]];persist();notebook()}})}
+document.querySelector('#ctx-notes').oninput=e=>{rec.notes=e.target.value;persist()};document.querySelector('#ctx-oral').onchange=e=>{rec.oral=e.target.checked;const ok=persist();document.querySelector('#ctx-save-status').textContent=ok?'Autoevaluación guardada.':'Autoevaluación registrada solo durante esta sesión.'};window.klevyProductive.prepareRecorder('context:'+id);document.querySelector('#prod-record').onclick=()=>{root.querySelectorAll('audio').forEach(a=>a.pause());window.klevyProductive.startRecording('context:'+id)};root.querySelectorAll('audio').forEach(a=>a.onplay=()=>{stopVoice();if(document.querySelector('#prod-stop-record')?.disabled===false){a.pause();document.querySelector('#productive-status').textContent='Terminá la grabación antes de reproducir audio.'}});document.querySelector('#prod-stop-record').onclick=()=>window.klevyProductive.stopRecording();document.querySelector('#prod-discard').onclick=()=>{window.klevyProductive.cleanup();window.klevyProductive.prepareRecorder('context:'+id);document.querySelector('#prod-recording').hidden=true};}
+function notebook(){activate();const items=Object.entries(state.notebook),now=Date.now();shell('Mi cuaderno de expresiones',`<p>Guardá frases útiles y escribí un ejemplo propio. El repaso usa tu autoevaluación: intentá recordar el significado antes de mostrarlo.</p>${items.length?'':'<p>Todavía no guardaste expresiones. Abrí un material o consultá una palabra de cualquier ejercicio.</p>'}${items.map(([key,v],i)=>{const m=materials.find(m=>m.id===v.materialId)||v.source;return `<article data-entry="${i}"><h3 lang="en">${E(v.term)}</h3><p lang="en">${E(v.sentence||'')}</p>${m?`<p class="small">Fuente: <a href="${E(m.url)}" target="_blank" rel="noopener noreferrer">${E(m.source)}</a></p>`:''}<p class="small">${v.consultations||0} consultas${v.lastConsulted?' (última: '+new Date(v.lastConsulted).toLocaleDateString('es-AR')+')':''} · ${v.reviews||0} repasos · ${!v.srs||v.srs.dueAt<=now?'Para repasar':`Próximo repaso: ${new Date(v.srs.dueAt).toLocaleDateString('es-AR')}`}</p><details><summary>Mostrar significado</summary><label>Significado<input data-meaning="${i}" value="${E(v.meaning)}"></label><div class="ctx-actions"><button data-recall="${i}" data-success="yes">Lo recordé</button><button data-recall="${i}" data-success="no">Necesito repasarlo</button></div></details><label>Mi propio ejemplo<textarea data-example="${i}" rows="2" placeholder="Write your own sentence…">${E(v.example)}</textarea></label><button data-delete="${i}">Eliminar expresión</button><p class="ctx-status" role="status"></p></article>`}).join('')}`);root.querySelectorAll('[data-meaning]').forEach(el=>el.oninput=()=>{items[+el.dataset.meaning][1].meaning=el.value;persist()});root.querySelectorAll('[data-example]').forEach(el=>el.oninput=()=>{items[+el.dataset.example][1].example=el.value;persist()});root.querySelectorAll('[data-recall]').forEach(b=>b.onclick=()=>{const v=items[+b.dataset.recall][1];v.srs=window.klevyDaily.nextSchedule(v,b.dataset.success==='yes',Date.now());v.reviews=(v.reviews||0)+1;const ok=persist();b.closest('article').querySelector('.ctx-status').textContent=ok?'Repaso guardado. Próximo: '+new Date(v.srs.dueAt).toLocaleDateString('es-AR'):'Repaso registrado solo durante esta sesión. No se pudo guardar.';b.closest('details').querySelectorAll('button').forEach(x=>x.disabled=true)});root.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{if(confirm('¿Eliminar esta expresión del cuaderno?')){delete state.notebook[items[+b.dataset.delete][0]];persist();notebook()}})}
 window.addEventListener('klevy:word-consulted',e=>{const d=e.detail,key=window.klevyLexicon.normalize(d.term),now=Date.now();const history=consultationHistory.get(key)||[];if(now-(history.at(-1)||0)<1000)return;history.push(now);consultationHistory.set(key,history.slice(-20));if(state.notebook[key]){const v=state.notebook[key];v.consultations=(v.consultations||0)+1;v.lastConsulted=now;persist()}});
 window.addEventListener('klevy:save-expression',e=>{const d=e.detail;const item=entry(d.term,d.meaning,d.sentence,d.materialId);item.consultations=Math.max(item.consultations||0,consultationHistory.get(window.klevyLexicon.normalize(d.term))?.length||1);item.lastConsulted=Date.now();persist()});
 const style=document.createElement('style');style.textContent=`nav{grid-template-columns:repeat(6,minmax(0,1fr))}.ctx article{padding:18px;margin:16px 0;border:1px solid #cedac8;border-radius:12px;background:#fff}.ctx-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.ctx-grid article{margin:0}.ctx-actions{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}.ctx p{line-height:1.75}.ctx textarea,.ctx input:not([type=checkbox]){display:block;width:100%;box-sizing:border-box;margin:8px 0 16px;padding:12px;font:inherit}.ctx audio{width:100%;margin:12px 0}.ctx-choice{display:block;margin:8px 0;width:100%;text-align:left}.ctx-transcript{padding:18px;background:#eef3e6;border-radius:12px}.ctx-active{background:#fbe9a9}.ctx details{margin:14px 0}.ctx label{display:block;margin-top:12px}@media(max-width:720px){nav{grid-template-columns:repeat(3,minmax(0,1fr))}#productive-nav{grid-column:auto}.ctx-grid{grid-template-columns:1fr}.ctx-actions button{flex:1}}`;document.head.append(style);
@@ -3173,7 +3240,7 @@ const normalize=s=>String(s).toLowerCase().normalize('NFKC').replace(/[’‘]/g
 const labels={gap:'Completar sin opciones',correction:'Corregir una frase',listening:'Escuchar y recuperar un dato',writing:'Escribir una respuesta propia',speaking:'Responder en voz alta'};
 let current=null;
 function ensure(){state.variety={seen:[],records:{},...state.variety};state.variety.records=state.variety.records||{}}
-function persist(){try{localStorage.setItem('english-path-offline',JSON.stringify(state));return true}catch{return false}}
+function persist(){return save()}
 function tasks(l=state.level){return [...window.klevyVariedTasks[l],...window.klevyPracticeTasks.writing[l].map(t=>({...t,id:'write:'+t.id,type:'writing',topic:'Comunicación escrita'})),...window.klevyPracticeTasks.speaking[l].map(t=>({...t,id:'speak:'+t.id,type:'speaking',topic:'Comunicación oral'}))]}
 function record(t,l=state.level){ensure();return state.variety.records[l+':'+t.id]}
 function focusTopics(l=state.level){const groups=new Map();for(const type of ['Gramática','Vocabulario','Lectura','Escucha'])data[l][type].forEach((q,index)=>{if(state.practice[`${l}:${type}:${index}`]?.correct!==false)return;const name=q[5]?.topic||'Repaso general',k=type+':'+name;let g=groups.get(k);if(!g){g={type,topic:name,rows:[]};groups.set(k,g)}const row={type,index,q};if(!g.rows.some(x=>window.klevyVariety.alike(x,row)))g.rows.push(row)});for(const t of tasks(l)){if(!['gap','correction','listening'].includes(t.type)||record(t,l)?.correct!==false)continue;let g=[...groups.values()].find(g=>g.topic===t.topic);if(!g){g={type:t.type==='listening'?'Escucha':'Gramática',topic:t.topic,rows:[]};groups.set('varied:'+t.topic,g)}g.variedErrors=(g.variedErrors||0)+1}return [...groups.values()].map(g=>({...g,count:g.rows.length+(g.variedErrors||0)})).sort((a,b)=>b.count-a.count).slice(0,3)}
@@ -3235,7 +3302,7 @@ if(name==='skills'){group='explore';document.querySelector('#home').click()}
 if(name==='production'){group='explore';document.querySelector('#productive-nav').click()}
 decorate();top()}
 function stats(){cleanup();group='learning';const l=state.level,types=['Gramática','Vocabulario','Lectura','Escucha'];const counts=types.map(t=>({type:t,total:data[l][t].length,seen:data[l][t].filter((_,i)=>state.practice[`${l}:${t}:${i}`]).length}));const seen=counts.reduce((n,x)=>n+x.seen,0),total=counts.reduce((n,x)=>n+x.total,0),units=window.englishStudy.overall(l);const done=t=>Object.entries(state.skills[t]||{}).filter(([k,v])=>k.startsWith(l+':')&&v.done).length;
-page('stats','Tu progreso','La práctica se guarda en este navegador.',`<div class="simple-progress"><strong>${seen} de ${total}</strong><span>preguntas practicadas en ${l}</span><div class="progress"><div style="width:${seen/total*100}%"></div></div></div><div class="simple-metrics"><p><strong>${units} de 12</strong><span>unidades recorridas</span></p><p><strong>${done('speaking')}</strong><span>prácticas orales registradas</span></p><p><strong>${done('writing')}</strong><span>textos revisados</span></p></div><details class="simple-details"><summary>Ver por habilidad</summary><p>Escuchas en contexto: ${Object.keys(state.listening?.records||{}).filter(k=>k.startsWith(l+':')).length} actividades completadas.</p>${counts.map(x=>`<p>${x.type}: ${x.seen} de ${x.total}</p>`).join('')}<p class="simple-note">Las conversaciones, actividades variadas y resúmenes en contexto se guardan por separado. Estos números registran práctica; no certifican tu nivel.</p></details><details class="simple-details"><summary>Datos y reinicio</summary><p>El progreso y los borradores no se sincronizan automáticamente entre dispositivos. Una unidad recorrida registra lectura y práctica, no dominio del tema.</p><button id="simple-reset">Borrar todo mi progreso</button><p class="simple-note">Esto incluye respuestas, ruta, borradores, cuaderno, conversaciones, escuchas, noticias y repasos. Conserva tu nivel seleccionado.</p></details>`);goBack('Mi aprendizaje',learning);document.querySelector('#simple-reset').onclick=()=>{if(!confirm('¿Borrar respuestas, ruta, borradores, prácticas, planificación, actividades en contexto, cuaderno, práctica variada, conversaciones, escuchas y noticias de este navegador?'))return;cleanup();state.answers=0;state.correct=0;state.completed=[];state.practice={};state.study={lastUnit:{},read:{},checks:{}};state.skills={speaking:{},writing:{}};state.daily={version:1,plans:{}};state.context={lessons:{}};state.notebook={};state.variety={seen:[],records:{}};state.conversations={records:{},drafts:{}};state.listening={records:{},drafts:{}};state.news={selections:{},drafts:{},records:{}};save();stats()}}
+page('stats','Tu progreso','La práctica se guarda en este navegador.',`<div class="simple-progress"><strong>${seen} de ${total}</strong><span>preguntas practicadas en ${l}</span><div class="progress"><div style="width:${seen/total*100}%"></div></div></div><div class="simple-metrics"><p><strong>${units} de 12</strong><span>unidades recorridas</span></p><p><strong>${done('speaking')}</strong><span>prácticas orales registradas</span></p><p><strong>${done('writing')}</strong><span>textos revisados</span></p></div><details class="simple-details"><summary>Ver por habilidad</summary><p>Escuchas en contexto: ${Object.keys(state.listening?.records||{}).filter(k=>k.startsWith(l+':')).length} actividades completadas.</p>${counts.map(x=>`<p>${x.type}: ${x.seen} de ${x.total}</p>`).join('')}<p class="simple-note">Las conversaciones, actividades variadas y resúmenes en contexto se guardan por separado. Estos números registran práctica; no certifican tu nivel.</p></details><details class="simple-details"><summary>Datos y reinicio</summary><p>El progreso y los borradores no se sincronizan automáticamente entre dispositivos. Una unidad recorrida registra lectura y práctica, no dominio del tema.</p><button id="simple-reset">Borrar todo mi progreso</button><p class="simple-note">Esto incluye respuestas, ruta, borradores, cuaderno, conversaciones, escuchas, noticias y repasos. Conserva tu nivel seleccionado.</p></details>`);goBack('Mi aprendizaje',learning);document.querySelector('#simple-reset').onclick=()=>{if(!confirm('¿Borrar respuestas, ruta, borradores, prácticas, planificación, actividades en contexto, cuaderno, práctica variada, conversaciones, escuchas y noticias de este navegador?'))return;cleanup();state.answers=0;state.correct=0;state.completed=[];state.practice={};state.study={lastUnit:{},read:{},checks:{}};state.skills={speaking:{},writing:{}};state.daily={version:1,plans:{}};state.context={lessons:{}};state.notebook={};state.variety={seen:[],records:{}};state.conversations={records:{},drafts:{}};state.listening={records:{},drafts:{}};state.news={selections:{},drafts:{},records:{}};window.klevyStorage.write(state,true);stats()}}
 function focus(){cleanup();group='learning';const rows=window.klevyVariedPractice.focusTopics();page('focus','Puntos a reforzar',rows.length?'Elegí un tema para entenderlo y volver a intentarlo.':'Todavía no hay errores pendientes para recomendarte un tema.',`<div class="simple-menu">${rows.map((r,i)=>menuButton('focus-'+i,r.topic,`${r.count} ${r.count===1?'patrón o actividad pendiente':'patrones o actividades pendientes'}`)).join('')}</div><details class="simple-details"><summary>¿Cómo se eligen estos temas?</summary><p>Se agrupan tus errores guardados y se reúnen variantes parecidas. Es una orientación para repasar, no un diagnóstico de nivel.</p></details>${rows.length?'':'<button id="focus-start" class="primary">Explorar actividades →</button>'}`);rows.forEach((r,i)=>document.querySelector('#focus-'+i).onclick=()=>{parent='focus';const unit=window.englishLessons[state.level].find(u=>u.practice[r.type]?.includes(r.topic));if(unit)window.englishStudy.openUnit(unit.id);else window.englishPathApp.choose(r.type,r.topic,'errors');screen=unit?'unit':'choose';schedule();top()});if(document.querySelector('#focus-start'))document.querySelector('#focus-start').onclick=explore;goBack('Mi aprendizaje',learning)}
 function fold(nodes,label,container,before=null){nodes=nodes.filter(Boolean);if(!nodes.length)return null;const d=document.createElement('details');d.className='simple-details';const summary=document.createElement('summary');summary.textContent=label;d.append(summary);container.insertBefore(d,before);nodes.forEach(n=>d.append(n));return d}
 function until(start,end){const nodes=[];for(let n=start;n&&n!==end;){const next=n.nextElementSibling;nodes.push(n);n=next}return nodes}
@@ -3309,7 +3376,7 @@ window.klevyConversationScenarios=[
 const scenarios=window.klevyConversationScenarios,root=document.querySelector('#app');let run=null,scenario=null;
 const E=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function ensure(){state.conversations={records:{},drafts:{},...state.conversations};state.conversations.records=state.conversations.records||{};state.conversations.drafts=state.conversations.drafts||{}}
-function persist(){try{localStorage.setItem('english-path-offline',JSON.stringify(state));return true}catch{const el=document.querySelector('#conv-status');if(el)el.textContent='No se pudo guardar en este navegador. Tu práctica sigue disponible mientras esta página esté abierta.';return false}}
+function persist(){if(save())return true;const el=document.querySelector('#conv-status');if(el)el.textContent='No se pudo guardar en este navegador. Tu práctica sigue disponible mientras esta página esté abierta.';return false}
 function key(l,id){return l+':'+id}
 function mediaCleanup(){window.klevyProductive.cleanup();window.klevyWordHelp?.close();root.querySelectorAll('audio').forEach(a=>a.pause());stopVoice()}
 function cancel(){mediaCleanup();run=null;scenario=null}
@@ -3336,7 +3403,7 @@ const lessons=window.klevyNaturalListening,root=document.querySelector('#app');l
 const E=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const normal=s=>String(s||'').toLowerCase().normalize('NFKC').replace(/[’‘]/g,"'").replace(/[.,!?;:]/g,'').replace(/\s+/g,' ').trim();
 function ensure(){state.listening={records:{},drafts:{},...state.listening};state.listening.records=state.listening.records||{};state.listening.drafts=state.listening.drafts||{}}
-function persist(){try{localStorage.setItem('english-path-offline',JSON.stringify(state));return true}catch{const s=document.querySelector('#natural-status');if(s)s.textContent='No se pudo guardar en este navegador. Podés continuar durante esta sesión.';return false}}
+function persist(){if(save())return true;const s=document.querySelector('#natural-status');if(s)s.textContent='No se pudo guardar en este navegador. Podés continuar durante esta sesión.';return false}
 const key=(l,id)=>l+':'+id;
 function media(){window.klevyProductive.cleanup();window.klevyWordHelp?.close();root.querySelectorAll('audio').forEach(a=>a.pause());stopVoice()}
 function cancel(){media();run=null;lesson=null}
@@ -3386,7 +3453,7 @@ const root=document.querySelector('#app'),E=s=>String(s??'').replace(/[&<>"']/g,
 const day=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Argentina/Buenos_Aires',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const date=s=>new Intl.DateTimeFormat('es-AR',{timeZone:'America/Argentina/Buenos_Aires',dateStyle:'medium',timeStyle:'short'}).format(new Date(s));
 function ensure(){state.news={selections:{},drafts:{},records:{},...state.news};for(const k of ['selections','drafts','records'])state.news[k]=state.news[k]||{}}
-function saveNews(){try{localStorage.setItem('english-path-offline',JSON.stringify(state));return true}catch{const el=document.querySelector('#news-status');if(el)el.textContent='No se pudo guardar en este navegador. Tu texto sigue disponible durante esta sesión.';return false}}
+function saveNews(){if(save())return true;const el=document.querySelector('#news-status');if(el)el.textContent='No se pudo guardar en este navegador. Tu texto sigue disponible durante esta sesión.';return false}
 function valid(p){if(!p||p.version!==1||!p.article)return false;const a=p.article;try{const u=new URL(a.url);return u.protocol==='https:'&&(u.hostname==='nasa.gov'||u.hostname.endsWith('.nasa.gov'))&&a.id===a.url&&typeof a.title==='string'&&typeof a.excerpt==='string'&&a.excerpt.length>=40&&a.excerpt.length<=3000&&a.title.length<400&&Number.isFinite(Date.parse(a.publishedAt))&&Date.parse(a.publishedAt)<=Date.now()+60000&&Number.isFinite(Date.parse(p.checkedAt))}catch{return false}}
 async function getJSON(url){const r=await fetch(url,{cache:'no-cache',signal:AbortSignal.timeout(10000)});if(!r.ok)throw Error('fetch');return r.json()}
 async function load(){ensure();const d=day(),cached=state.news.selections[d];if(valid(cached)&&!cached.fallback)return cached;if(loading)return loading;loading=(async()=>{let p;try{p=await getJSON('api/news');if(!valid(p)||p.selectionDay!==d)throw Error('invalid');p.fallback=false}catch{const candidates=Object.values(state.news.selections).filter(valid).sort((a,b)=>Date.parse(b.checkedAt)-Date.parse(a.checkedAt));p=candidates[0];if(!p){try{p=await getJSON('news/latest.json')}catch{}}if(!valid(p))throw Error('unavailable');p={...p,fallback:true}}
