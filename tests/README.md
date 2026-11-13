@@ -62,3 +62,13 @@ node tests/listening-evidence.cjs
 Checks literal transcript excerpts for both graded answers in every listening lesson, uniquely located text, no evidence/highlights before grading, attributed speakers, dictionary/notebook source, focused and highlighted context, post-answer review separated from pre-answer help, unchanged correctness/play counts, reload/progress and a fallback that omits invalid quotations. Plays all 12 actual local MP3s over HTTP. `KLEVY_SCREENSHOT_DIR` optionally captures the highlighted context.
 
 The editorial selections and scope are documented in [the evidence review](../docs/listening-evidence.md). Exactness here means matching the stored transcript; the test does not establish word-for-word transcription accuracy against the recording.
+
+## B1 routines and travel plans
+
+```sh
+node tests/b1-routines-plans.cjs
+```
+
+Checks the two additional reviewed units, goal/context visibility, independent answer-meaning fixtures (duration, future-form overlap, booking acceptance, ticket restrictions and a spoken correction), speech API input, removal of obsolete word audio, preservation of historical scores/SRS/drafts/review criteria, multiple archive snapshots on the same day, new answers after reload, export and the mobile flow.
+
+These are functional/editorial checks, not evidence of measured acquisition. The scope and references are in [the review report](../docs/pedagogy-b1-routines-plans.md). Synthetic speech input is inspected with an instrumented speech API; pronunciation on an actual iPhone remains a device check.
