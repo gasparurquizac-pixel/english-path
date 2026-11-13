@@ -25,7 +25,7 @@ const url=process.env.KLEVY_TEST_URL||'http://127.0.0.1:8000/ingles.html';
      assert.equal(await page.locator('#natural-answer-result').textContent(),right?'✓ Tu respuesta es correcta.':'✗ Tu respuesta es incorrecta.');
      assert.equal(await page.locator('.natural-answer.wrong').count(),right?0:1);
      if(!right)assert.equal(await page.locator('#natural-selected-answer').textContent(),lesson.gist[1][choice]);
-     assert(await page.locator('.natural-explanation p').isHidden());
+     assert(await page.locator('.natural-explanation > .natural-why').isHidden());
      const answer=await page.locator('#natural-correct-answer').boundingBox(),next=await page.locator('#natural-next').boundingBox();
      assert(answer.y>=-1&&answer.y+answer.height<=height+1,'The English answer must be visible: '+JSON.stringify(answer));
      assert(next.y>=-1&&next.y+next.height<=height+1,'The next step must stay visible: '+JSON.stringify(next));
@@ -40,7 +40,7 @@ const url=process.env.KLEVY_TEST_URL||'http://127.0.0.1:8000/ingles.html';
      if(!right)assert.match(await page.locator('[data-natural-choice="'+choice+'"] [data-natural-answer-marker]').textContent(),/Tu elección/);
      await page.locator('.natural-answered summary').click();
      await page.locator('.natural-explanation summary').click();
-     assert.equal(await page.locator('.natural-explanation p').textContent(),lesson.gist[3]);
+     assert.equal(await page.locator('.natural-explanation > .natural-why').textContent(),lesson.gist[3]);
      if(process.env.KLEVY_SCREENSHOT_DIR&&!right&&lesson===lessons[0]){
       await page.locator('.natural-explanation summary').click();await page.locator('#natural-feedback').scrollIntoViewIfNeeded();
       await page.screenshot({path:process.env.KLEVY_SCREENSHOT_DIR+'/feedback-'+width+'.png'});

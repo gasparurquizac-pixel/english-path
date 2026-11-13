@@ -52,3 +52,13 @@ node tests/listening-feedback.cjs
 Checks correct and incorrect selections across all 12 natural-listening lessons at 390px and 320px widths, light/dark appearance, visible English answer/forward button, marked options, optional Spanish explanation, accepted short answers, honest self-review, escaped response text, reload/resume, preserved progress, and the separate standard listening flow.
 
 Set `KLEVY_SCREENSHOT_DIR` to an existing directory to capture the first incorrect answer in both viewport sizes. The test uses disposable profiles and does not alter an existing learner profile.
+
+## Transcript evidence
+
+```sh
+node tests/listening-evidence.cjs
+```
+
+Checks literal transcript excerpts for both graded answers in every listening lesson, uniquely located text, no evidence/highlights before grading, attributed speakers, dictionary/notebook source, focused and highlighted context, post-answer review separated from pre-answer help, unchanged correctness/play counts, reload/progress and a fallback that omits invalid quotations. Plays all 12 actual local MP3s over HTTP. `KLEVY_SCREENSHOT_DIR` optionally captures the highlighted context.
+
+The editorial selections and scope are documented in [the evidence review](../docs/listening-evidence.md). Exactness here means matching the stored transcript; the test does not establish word-for-word transcription accuracy against the recording.
