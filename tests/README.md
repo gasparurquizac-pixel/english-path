@@ -83,3 +83,14 @@ node tests/backup-restore.cjs
 Exercises new versioned and historical raw JSON copies through the file picker and confirmation screen. Checks full populated state (including listening/conversation/news drafts, SRS, notebook and writing), preview/cancel/focus, the single automatic previous-state copy, download and reset, old-content migration, malformed/unsafe/oversized files, asynchronous file selection, quota/read failures, stale changes, corrupt original bytes and pending writing drafts. Tests use disposable profiles and synthetic data; no learner backup is uploaded or modified.
 
 See [backup usage and design](../docs/backup-restore.md) for replacement behavior and limitations. Chromium mobile viewports are checked; an actual iPhone/Safari file-picker and Files download check is still a device validation.
+
+
+## B1 food and quantities
+
+```sh
+node tests/quantity.cjs
+```
+
+Checks the revised unit, 15 independently specified meaning cases, five distinct synthetic-listening situations, speech input and removal of obsolete word audio, dedicated oral/writing flows, unchanged earlier drafts and score/SRS records, archived prior quick-check selections, unit-linked daily plan migration (including plans whose questions come from another unit), reload, versioned backup validation and mobile layout. Existing writing drafts retain their daily-plan priority.
+
+The full editorial scope and limitations are in [the quantities review](../docs/pedagogy-b1-quantity.md). Tests do not measure learner acquisition or certify B1. Actual iPhone speech/microphone/file handling remains a device check.
