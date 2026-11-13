@@ -41,3 +41,14 @@ node tests/pedagogy.cjs
 This suite visits the reviewed B1/B2 units, their contextual reading and dictionary, a practice session and mixed-conditional topic selection. It checks migration of previous question/SRS records and today's affected plan, preservation of writing drafts and old review criteria, durable recording of new answers, archive export/reset, mobile layout and the unchanged 2,000-question total.
 
 These are functional/content-integrity checks. They do not assess actual learner acquisition or certify a CEFR level. The editorial scope, rationale and external references are in [the pedagogy review](../docs/pedagogy-review-2026-11.md).
+
+
+## Listening answer feedback
+
+```sh
+node tests/listening-feedback.cjs
+```
+
+Checks correct and incorrect selections across all 12 natural-listening lessons at 390px and 320px widths, light/dark appearance, visible English answer/forward button, marked options, optional Spanish explanation, accepted short answers, honest self-review, escaped response text, reload/resume, preserved progress, and the separate standard listening flow.
+
+Set `KLEVY_SCREENSHOT_DIR` to an existing directory to capture the first incorrect answer in both viewport sizes. The test uses disposable profiles and does not alter an existing learner profile.
