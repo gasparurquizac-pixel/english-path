@@ -101,6 +101,17 @@ The full editorial scope and limitations are in [the quantities review](../docs/
 node tests/vocabulary-audio.cjs
 ```
 
-Exercises every one of the 125 vocabulary audio items with correct and incorrect selections (250 rendered cases), distinguishing English recognition from contextual Spanish meaning. Checks explicit target words, completed English examples, speech API payloads, visible English/Spanish feedback, replay without regrading, keyboard use, metadata fallback, persistent score/SRS/drafts, export and light/dark layout at 320px. Independent cases include staff turnover and headache.
+Exercises every one of the 120 vocabulary audio items with correct and incorrect selections (240 rendered cases), distinguishing English recognition from contextual Spanish meaning. Checks explicit target words, completed English examples, speech API payloads, visible English/Spanish feedback, replay without regrading, keyboard use, metadata fallback, persistent score/SRS/drafts, export and light/dark layout at 320px. Independent cases include staff turnover and headache.
 
 See [the vocabulary audio fix](../docs/vocabulary-audio-feedback.md) for scope and compatibility. Speech API input is instrumented; actual voice playback and pronunciation on an iPhone remain device checks.
+
+
+## B1 comparisons and shopping
+
+```sh
+node tests/compare-shopping.cjs
+```
+
+Checks the 95 revised questions, 24 independent meaning cases (comparison scope, thresholds, delivered prices, estimates and pending requests), five reading/listening situations, diversity within a reading session, actual unit links to oral/writing tasks, speech input, preservation of old scores/SRS/drafts/prompts/check history/daily plans, export and full backup restoration, reload and mobile layout. The other revised-unit tests retain their own checks and now expect 370 reviewed bank questions.
+
+The [review report](../docs/pedagogy-b1-comparisons-shopping.md) states the editorial scope, references and limitations. Existing word/significance audio cases were replaced by contextual shopping messages, so the vocabulary audio suite now covers 120 rows and 240 rendered selections. No acquisition or physical-iPhone validation is claimed.

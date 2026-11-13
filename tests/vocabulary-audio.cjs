@@ -7,7 +7,7 @@ try{
  const p=await c.newPage();p.on('pageerror',e=>errors.push(e.message));await p.goto(url);await p.waitForFunction(()=>window.klevyBackup);
  assert.equal(await p.evaluate(()=>state.practice['B1:Vocabulario:129'].attempts),3);assert.equal(await p.evaluate(()=>state.practice['B2:Vocabulario:94'].srs.dueAt),87654);assert.equal(await p.evaluate(()=>state.answers),31);
  const bank=await p.evaluate(()=>({B1:data.B1.Vocabulario,B2:data.B2.Vocabulario}));const rows=Object.entries(bank).flatMap(([level,qs])=>qs.map((q,index)=>({level,index,q})).filter(r=>r.q[5]?.audio));
- assert.equal(rows.length,125);assert.equal(rows.filter(r=>r.q[5].vocabulary?.kind==='meaning').length,55);assert.equal(rows.filter(r=>r.q[5].vocabulary?.kind==='recognition').length,55);assert.equal(rows.filter(r=>!r.q[5].vocabulary).length,15);
+ assert.equal(rows.length,120);assert.equal(rows.filter(r=>r.q[5].vocabulary?.kind==='meaning').length,50);assert.equal(rows.filter(r=>r.q[5].vocabulary?.kind==='recognition').length,50);assert.equal(rows.filter(r=>!r.q[5].vocabulary).length,20);
  for(const{q}of rows){assert(!q[5].audio.includes('___'));const v=q[5].vocabulary;if(v){assert(v.example.includes(v.term));assert.equal(q[1][q[2]],v.kind==='meaning'?v.meaning:v.term);if(v.kind==='meaning'){assert(q[0].includes('«'+v.term+'»'));assert.equal(q[5].audio,v.example)}else assert.equal(q[5].audio,v.term)}}
  // Exercise the rendered handlers of every vocabulary audio, both correct and incorrect.
  const result=await p.evaluate(rows=>{
@@ -32,7 +32,7 @@ try{
   }
   return {trials,failures};
  },rows.map(({level,index})=>({level,index})));
- assert.deepEqual(result.failures,[]);assert.equal(result.trials,250);
+ assert.deepEqual(result.failures,[]);assert.equal(result.trials,240);
  async function show(level,index){await p.evaluate(({level,index})=>{state.level=level;session={level,type:'Vocabulario',ids:[index,0],index:0,score:0,answered:false};question()},{level,index})}
  // Independent reproductions: the sentence identifies the sense of turnover; headache remains an English recognition task.
  await show('B2',94);assert.match(await p.locator('.ep-q').textContent(),/«turnover»/);await p.click('#listen');assert.deepEqual(await p.evaluate(()=>__vocabSpoken),{text:'High staff turnover made it hard to build an experienced team.',lang:'en-GB'});await p.locator('[data-answer]').filter({hasText:'rotación de personal'}).click();assert.equal(await p.locator('#vocab-heard').textContent(),'turnover');assert.match(await p.locator('#vocab-correct-answer').textContent(),/rotación de personal/);assert(await p.locator('#vocab-example').isVisible());assert.equal(await p.locator('.vocab-explanation').evaluate(e=>e.open),false);await p.click('#next');assert.equal(await p.evaluate(()=>session.ids[session.index]),0);
@@ -45,5 +45,5 @@ try{
  await show('B2',4);assert.equal(await p.locator('#listen').count(),0);assert.equal(await p.locator('#vocab-audio-instruction').count(),0);await p.locator('[data-answer]').filter({hasText:'deadline'}).click();assert.equal(await p.locator('.vocab-audio-feedback').count(),0);assert.match(await p.locator('#feedback').textContent(),/deadline/);
  const beforeReload=await p.evaluate(()=>({answers:state.answers,correct:state.correct,record:state.practice['B2:Vocabulario:94'],draft:state.skills.writing['B1:past-story'].text}));await p.reload();assert.deepEqual(await p.evaluate(()=>({answers:state.answers,correct:state.correct,record:state.practice['B2:Vocabulario:94'],draft:state.skills.writing['B1:past-story'].text})),beforeReload);
  await p.click('#nav-learning');await p.click('#learning-progress');await p.locator('details:has(#practice-history-download) summary').click();const downloading=p.waitForEvent('download');await p.click('#practice-history-download');const d=await downloading,raw=await fs.readFile(await d.path(),'utf8');assert(await p.evaluate(raw=>!!klevyBackup.prepare(raw),raw));assert.equal(JSON.parse(raw).data.skills.writing['B1:past-story'].text,'Preserve my story.');assert.deepEqual(errors,[]);
- console.log('PASS 125 vocabulary audios / 250 rendered correct+incorrect cases: explicit English/Spanish tasks, complete contextual meaning audio, visible English term and sentence, separate translation, replay/keyboard, no regrading, metadata fallback, score/SRS/draft preservation, reload/export and 320px light/dark layout.');
+ console.log('PASS 120 vocabulary audios / 240 rendered correct+incorrect cases: explicit English/Spanish tasks, complete contextual meaning audio, visible English term and sentence, separate translation, replay/keyboard, no regrading, metadata fallback, score/SRS/draft preservation, reload/export and 320px light/dark layout.');
 }finally{await browser.close()}})().catch(e=>{console.error(e);process.exit(1)});

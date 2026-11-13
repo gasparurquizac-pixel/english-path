@@ -19,7 +19,7 @@ Por ejemplo, turnover se presenta con la oración: “High staff turnover made i
 
 ## Alcance y registros
 
-El banco contiene 125 filas con audio en vocabulario: 55 de reconocimiento, 55 de significado y 15 de comprensión de mensajes ya revisados. Las 55 filas de significado ahora usan una oración completa y una consigna que identifica el término. Los 110 ejercicios de palabra/significado tienen datos explícitos de término, significado y ejemplo; esos datos se descartan cuando una revisión reemplaza la actividad por otra contextual.
+En la corrección original, el banco contenía 125 filas con audio en vocabulario: 55 de reconocimiento, 55 de significado y 15 de comprensión de mensajes ya revisados. Las 55 filas de significado ahora usan una oración completa y una consigna que identifica el término. Los 110 ejercicios de palabra/significado tienen datos explícitos de término, significado y ejemplo; esos datos se descartan cuando una revisión reemplaza la actividad por otra contextual.
 
 Se conservan las 2.000 listas de opciones, el orden de sus opciones y las claves de respuesta. No se borran ni reinterpretan como preguntas nuevas los registros de los mismos objetivos léxicos: intentos, aciertos y SRS mantienen sus identificadores. Reproducir un audio no vuelve a puntuar. Las 275 preguntas de las unidades revisadas, sus explicaciones, todas las tareas de producción y la biblioteca de doce audios humanos permanecen iguales.
 
@@ -27,8 +27,12 @@ No se incorpora un proveedor de voz nuevo ni una API de pago. Se sigue usando la
 
 ## Verificación
 
-`tests/vocabulary-audio.cjs` recorre los 125 audios con selección correcta e incorrecta: 250 casos de interfaz, además de dos casos independientes (significado de turnover y reconocimiento de headache), repetición por teclado, texto completo sin huecos, idioma enviado al motor de voz, ausencia de puntuación duplicada, manejo de metadatos incoherentes, preservación de registros, recarga, exportación y presentación a 320 px en modo claro y oscuro.
+La suite original de `tests/vocabulary-audio.cjs` recorrió los 125 audios con selección correcta e incorrecta: 250 casos de interfaz, además de dos casos independientes (significado de turnover y reconocimiento de headache), repetición por teclado, texto completo sin huecos, idioma enviado al motor de voz, ausencia de puntuación duplicada, manejo de metadatos incoherentes, preservación de registros, recarga, exportación y presentación a 320 px en modo claro y oscuro.
 
 La comparación del banco completo confirma 55 cambios de consigna y 55 de contenido de voz, con todas las opciones y claves conservadas. También pasan las pruebas de las unidades B1 revisadas, devolución de listening y confiabilidad del guardado.
 
 Las pruebas instrumentan la entrada a speechSynthesis y verifican su texto e idioma. No certifican la pronunciación o la disponibilidad de las voces de un iPhone físico. Si un dispositivo presenta otro fallo de reproducción, hace falta identificar ese caso.
+
+## Actualización tras revisar compras
+
+La revisión de [comparaciones y compras](pedagogy-b1-comparisons-shopping.md) reemplazó diez filas de palabra/significado por cinco mensajes contextuales. La suite actual recorre 120 audios con dos selecciones cada uno (240 casos): 50 de reconocimiento, 50 de significado y 20 de comprensión de mensajes. Se conserva la separación de idiomas y no se alteran las otras actividades revisadas.

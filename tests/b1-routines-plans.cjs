@@ -21,7 +21,7 @@ try{
  assert(await page.evaluate(()=>state.skills.speaking['B1:daily-introduction'].done));
  assert.equal(await page.evaluate(()=>state.skills.speaking['B1:daily-introduction'].reflection),'My earlier oral reflection.');
  assert.deepEqual(await page.evaluate(()=>state.skills.writing['B1:past-story'].checks),[true,true,true]);
- assert.equal(await page.evaluate(()=>englishPathApp.count()),2000);assert.equal(await page.evaluate(()=>klevyContentReview.keys.length),275);
+ assert.equal(await page.evaluate(()=>englishPathApp.count()),2000);assert.equal(await page.evaluate(()=>klevyContentReview.keys.length),370);
  assert.equal(await page.evaluate(()=>englishStudy.recordsFor('B1',englishLessons.B1.find(u=>u.id==='daily-life')).length),25);
  assert.equal(await page.evaluate(()=>englishStudy.recordsFor('B1',englishLessons.B1.find(u=>u.id==='future-plans')).length),135);
  async function openUnit(id){await page.click('#nav-explore');await page.locator('details:has(#explore-route) summary').click();await page.click('#explore-route');await page.locator('details:has(.study-grid) summary').click();await page.click('[data-unit="'+id+'"]');await page.locator('.study-situation').waitFor();assert.equal(await page.locator('.simple-stage').count(),3)}
