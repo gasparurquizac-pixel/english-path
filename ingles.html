@@ -211,8 +211,8 @@ const app=document.querySelector("#app");
 const level=document.querySelector("#level");
 // Keep learner data intact when reading fails or a stale tab tries to save.
 window.klevyStorage=(()=>{
-const key='english-path-offline';
-let lastRaw=null,originalRaw=null,readable=false,issue='',getState=()=>null;
+const key='english-path-offline',recoveryKey='klevy-before-restore';
+let lastRaw=null,originalRaw=null,readable=false,issue='',getState=()=>null,exporter=value=>value,applyingRestore=false;
 const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 function valid(value){
  if(!object(value))return false;
@@ -252,6 +252,7 @@ function load(){
  try{const saved=JSON.parse(lastRaw);if(!valid(saved))throw Error('invalid-state');return saved}catch{report('corrupt');return null}
 }
 function write(value,replace=false){
+ if(applyingRestore)return false;
  if(!replace&&(issue==='corrupt'||issue==='conflict'))return false;
  try{
   const actual=localStorage.getItem(key);
@@ -261,13 +262,45 @@ function write(value,replace=false){
   lastRaw=raw;originalRaw=raw;readable=true;report('');return true;
  }catch{report('blocked');return false}
 }
-function download(original=false){
- if(!original)window.klevyProductive?.flush?.();
- const raw=original?originalRaw:JSON.stringify(getState(),null,2);
+function downloadRaw(raw,filename){
  if(typeof raw!=='string')return;
  const url=URL.createObjectURL(new Blob([raw],{type:'application/json'})),link=document.createElement('a');
- link.href=url;link.download=original?'klevy-datos-anteriores.json':'klevy-progreso-'+new Date().toISOString().slice(0,10)+'.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
+ link.href=url;link.download=filename;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
+}
+function download(original=false){
+ if(!original)window.klevyProductive?.flush?.();
+ const raw=original?originalRaw:JSON.stringify(exporter(getState()),null,2);
+ downloadRaw(raw,original?'klevy-datos-anteriores.json':'klevy-progreso-'+new Date().toISOString().slice(0,10)+'.json');
  document.querySelector('#storage-copy-status').textContent='Se solicitó la descarga. Conservá el archivo como copia de tus datos; no contiene grabaciones de audio.';
+}
+function capture(){
+ window.klevyProductive?.flush?.();
+ let actual;try{actual=localStorage.getItem(key)}catch{report('blocked');throw Error('No se puede acceder al guardado. Habilitá el almacenamiento y volvé a intentar.')}
+ if(applyingRestore||issue==='conflict'||(readable?actual!==lastRaw:actual!==null)){
+  report('conflict');throw Error('El progreso cambió. Recargá Klevy y volvé a seleccionar la copia.');
+ }
+ return {raw:actual,live:JSON.stringify(getState())};
+}
+function recovery(){return localStorage.getItem(recoveryKey)}
+function clearRecovery(){try{localStorage.removeItem(recoveryKey);return true}catch{return false}}
+function restore(value,token,wrap){
+ const current=capture();
+ if(current.raw!==token.raw||current.live!==token.live)throw Error('El progreso cambió desde el resumen. Volvé a seleccionar la copia antes de restaurar.');
+ const previous=wrap(JSON.parse(token.live));
+ if(issue==='corrupt'&&token.raw!==null)previous.storedBeforeRestore=token.raw;
+ const backup=JSON.stringify(previous),next=JSON.stringify(value);
+ let oldRecovery;try{oldRecovery=recovery()}catch{throw Error('No se pudo leer la copia anterior. El progreso actual se conserva.')}
+ try{localStorage.setItem(recoveryKey,backup)}catch{throw Error('No se pudo guardar la copia anterior. Liberá espacio o habilitá el guardado. El progreso actual se conserva.')}
+ try{
+  if(localStorage.getItem(key)!==token.raw)throw Error('changed');
+  localStorage.setItem(key,next);
+ }catch(error){
+  try{if(recovery()===backup){if(oldRecovery===null)localStorage.removeItem(recoveryKey);else localStorage.setItem(recoveryKey,oldRecovery)}}catch{}
+  if(error.message==='changed'){report('conflict');throw Error('El progreso cambió en otra pestaña. Recargá Klevy antes de restaurar.')}
+  throw Error('No se pudo guardar la restauración. El progreso actual se conserva. Revisá el espacio disponible y volvé a intentar.');
+ }
+ // Until reload, old callbacks/pagehide handlers must not write their previous session.
+ applyingRestore=true;lastRaw=next;originalRaw=next;readable=true;report('');
 }
 document.querySelector('#storage-retry').onclick=()=>{window.klevyProductive?.flush?.();write(getState())};
 document.querySelector('#storage-copy').onclick=()=>download();
@@ -277,7 +310,7 @@ window.addEventListener('storage',event=>{
  if(event.key!==key&&event.key!==null)return;
  try{if(event.storageArea===localStorage&&localStorage.getItem(key)!==lastRaw&&issue!=='corrupt')report('conflict')}catch{if(!issue)report('blocked')}
 });
-return {load,write,download,bind:getter=>{getState=getter},valid,get status(){return issue||'saved'}};
+return {load,write,download,downloadRaw,capture,recovery,restore,clearRecovery,exportWith:fn=>{exporter=fn},bind:getter=>{getState=getter},valid,get status(){return applyingRestore?'restoring':issue||'saved'}};
 })();
 
 let state={answers:0,correct:0,completed:[],level:"B1"};
@@ -3358,7 +3391,7 @@ if(name==='skills'){group='explore';document.querySelector('#home').click()}
 if(name==='production'){group='explore';document.querySelector('#productive-nav').click()}
 decorate();top()}
 function stats(){cleanup();group='learning';const l=state.level,types=['Gramática','Vocabulario','Lectura','Escucha'];const counts=types.map(t=>({type:t,total:data[l][t].length,seen:data[l][t].filter((_,i)=>state.practice[`${l}:${t}:${i}`]).length}));const seen=counts.reduce((n,x)=>n+x.seen,0),total=counts.reduce((n,x)=>n+x.total,0),units=window.englishStudy.overall(l);const done=t=>Object.entries(state.skills[t]||{}).filter(([k,v])=>k.startsWith(l+':')&&v.done).length;
-page('stats','Tu progreso','La práctica se guarda en este navegador.',`<div class="simple-progress"><strong>${seen} de ${total}</strong><span>preguntas practicadas en ${l}</span><div class="progress"><div style="width:${seen/total*100}%"></div></div></div><div class="simple-metrics"><p><strong>${units} de 12</strong><span>unidades recorridas</span></p><p><strong>${done('speaking')}</strong><span>prácticas orales registradas</span></p><p><strong>${done('writing')}</strong><span>textos revisados</span></p></div><details class="simple-details"><summary>Ver por habilidad</summary><p>Escuchas en contexto: ${Object.keys(state.listening?.records||{}).filter(k=>k.startsWith(l+':')).length} actividades completadas.</p>${counts.map(x=>`<p>${x.type}: ${x.seen} de ${x.total}</p>`).join('')}<p class="simple-note">Las conversaciones, actividades variadas y resúmenes en contexto se guardan por separado. Estos números registran práctica; no certifican tu nivel.</p></details><details class="simple-details"><summary>Datos y reinicio</summary>${Object.keys(state.practiceArchive).length?`<p class="simple-note">Conservamos ${Object.keys(state.practiceArchive).length} registros de preguntas anteriores a la revisión de contenido. El contador principal muestra las versiones actuales.</p>`:""}<button id="practice-history-download">Descargar progreso e historial</button><p>El progreso y los borradores no se sincronizan automáticamente entre dispositivos. Una unidad recorrida registra lectura y práctica, no dominio del tema.</p><button id="simple-reset">Borrar todo mi progreso</button><p class="simple-note">Esto incluye respuestas, ruta, borradores, cuaderno, conversaciones, escuchas, noticias y repasos. Conserva tu nivel seleccionado.</p></details>`);goBack('Mi aprendizaje',learning);const historyDownload=document.querySelector('#practice-history-download');if(historyDownload)historyDownload.onclick=()=>window.klevyStorage.download();document.querySelector('#simple-reset').onclick=()=>{if(!confirm('¿Borrar respuestas, ruta, borradores, prácticas, planificación, actividades en contexto, cuaderno, práctica variada, conversaciones, escuchas y noticias de este navegador?'))return;cleanup();state.answers=0;state.correct=0;state.completed=[];state.practice={};state.practiceArchive={};state.study={lastUnit:{},read:{},checks:{}};state.skills={speaking:{},writing:{}};state.daily={version:1,plans:{}};state.context={lessons:{}};state.notebook={};state.variety={seen:[],records:{}};state.conversations={records:{},drafts:{}};state.listening={records:{},drafts:{}};state.news={selections:{},drafts:{},records:{}};window.klevyStorage.write(state,true);stats()}}
+page('stats','Tu progreso','La práctica se guarda en este navegador.',`<div class="simple-progress"><strong>${seen} de ${total}</strong><span>preguntas practicadas en ${l}</span><div class="progress"><div style="width:${seen/total*100}%"></div></div></div><div class="simple-metrics"><p><strong>${units} de 12</strong><span>unidades recorridas</span></p><p><strong>${done('speaking')}</strong><span>prácticas orales registradas</span></p><p><strong>${done('writing')}</strong><span>textos revisados</span></p></div><details class="simple-details"><summary>Ver por habilidad</summary><p>Escuchas en contexto: ${Object.keys(state.listening?.records||{}).filter(k=>k.startsWith(l+':')).length} actividades completadas.</p>${counts.map(x=>`<p>${x.type}: ${x.seen} de ${x.total}</p>`).join('')}<p class="simple-note">Las conversaciones, actividades variadas y resúmenes en contexto se guardan por separado. Estos números registran práctica; no certifican tu nivel.</p></details><details class="simple-details"><summary>Datos y reinicio</summary>${Object.keys(state.practiceArchive).length?`<p class="simple-note">Conservamos ${Object.keys(state.practiceArchive).length} registros de preguntas anteriores a la revisión de contenido. El contador principal muestra las versiones actuales.</p>`:""}<button id="practice-history-download">Descargar copia de seguridad</button><button id="backup-open" aria-haspopup="dialog" aria-controls="backup-dialog">Restaurar copia de seguridad</button><p id="backup-open-status" class="simple-note" role="status"></p><p>El progreso y los borradores no se sincronizan automáticamente entre dispositivos. Una unidad recorrida registra lectura y práctica, no dominio del tema.</p><button id="simple-reset">Borrar todo mi progreso</button><p class="simple-note">Esto incluye respuestas, ruta, borradores, cuaderno, conversaciones, escuchas, noticias, repasos y la copia automática anterior. Conserva tu nivel seleccionado.</p></details>`);goBack('Mi aprendizaje',learning);const historyDownload=document.querySelector('#practice-history-download');if(historyDownload)historyDownload.onclick=()=>window.klevyStorage.download();document.querySelector('#backup-open').onclick=()=>{if(window.klevyBackup)window.klevyBackup.open();else document.querySelector('#backup-open-status').textContent='No se pudo cargar la restauración. Recargá Klevy y volvé a intentar.'};document.querySelector('#simple-reset').onclick=()=>{if(!confirm('¿Borrar respuestas, ruta, borradores, prácticas, planificación, actividades en contexto, cuaderno, conversaciones, escuchas, noticias y la copia automática anterior de este navegador?'))return;cleanup();state.answers=0;state.correct=0;state.completed=[];state.practice={};state.practiceArchive={};state.study={lastUnit:{},read:{},checks:{}};state.skills={speaking:{},writing:{}};state.daily={version:1,plans:{}};state.context={lessons:{}};state.notebook={};state.variety={seen:[],records:{}};state.conversations={records:{},drafts:{}};state.listening={records:{},drafts:{}};state.news={selections:{},drafts:{},records:{}};const saved=window.klevyStorage.write(state,true),cleared=saved&&window.klevyStorage.clearRecovery();stats();if(saved&&!cleared)document.querySelector('#backup-open-status').textContent='El progreso se borró, pero no pudimos borrar la copia automática anterior. Revisá los permisos del navegador.'}}
 function focus(){cleanup();group='learning';const rows=window.klevyVariedPractice.focusTopics();page('focus','Puntos a reforzar',rows.length?'Elegí un tema para entenderlo y volver a intentarlo.':'Todavía no hay errores pendientes para recomendarte un tema.',`<div class="simple-menu">${rows.map((r,i)=>menuButton('focus-'+i,r.topic,`${r.count} ${r.count===1?'patrón o actividad pendiente':'patrones o actividades pendientes'}`)).join('')}</div><details class="simple-details"><summary>¿Cómo se eligen estos temas?</summary><p>Se agrupan tus errores guardados y se reúnen variantes parecidas. Es una orientación para repasar, no un diagnóstico de nivel.</p></details>${rows.length?'':'<button id="focus-start" class="primary">Explorar actividades →</button>'}`);rows.forEach((r,i)=>document.querySelector('#focus-'+i).onclick=()=>{parent='focus';const unit=window.englishLessons[state.level].find(u=>u.practice[r.type]?.includes(r.topic));if(unit)window.englishStudy.openUnit(unit.id);else window.englishPathApp.choose(r.type,r.topic,'errors');screen=unit?'unit':'choose';schedule();top()});if(document.querySelector('#focus-start'))document.querySelector('#focus-start').onclick=explore;goBack('Mi aprendizaje',learning)}
 function fold(nodes,label,container,before=null){nodes=nodes.filter(Boolean);if(!nodes.length)return null;const d=document.createElement('details');d.className='simple-details';const summary=document.createElement('summary');summary.textContent=label;d.append(summary);container.insertBefore(d,before);nodes.forEach(n=>d.append(n));return d}
 function until(start,end){const nodes=[];for(let n=start;n&&n!==end;){const next=n.nextElementSibling;nodes.push(n);n=next}return nodes}
@@ -3592,4 +3625,5 @@ root.addEventListener('click',requestFeedback,true);root.addEventListener('submi
 })();
 
 </script>
+<script src="backup.js?v=1" defer></script>
 </body></html>

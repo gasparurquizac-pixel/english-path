@@ -30,7 +30,7 @@ The suite checks:
 - Denied microphone permission permits retry; a stream arriving after navigation is stopped.
 - An already-loaded practice works offline; unavailable news/audio show a usable failure message.
 
-Microphone failures are injected, not tested on real hardware. Offline coverage is for an already-loaded app, not a service-worker installation. Cross-tab protection detects a changed storage snapshot; it does not merge sessions or provide a transactional multi-user database. Downloaded JSON is a data copy; this change does not add an import screen.
+Microphone failures are injected, not tested on real hardware. Offline coverage is for an already-loaded app, not a service-worker installation. Cross-tab protection detects a changed storage snapshot; it does not merge sessions or provide a transactional multi-user database. Downloaded JSON can be restored using the backup screen described below.
 
 ## Reviewed learning units
 
@@ -72,3 +72,14 @@ node tests/b1-routines-plans.cjs
 Checks the two additional reviewed units, goal/context visibility, independent answer-meaning fixtures (duration, future-form overlap, booking acceptance, ticket restrictions and a spoken correction), speech API input, removal of obsolete word audio, preservation of historical scores/SRS/drafts/review criteria, multiple archive snapshots on the same day, new answers after reload, export and the mobile flow.
 
 These are functional/editorial checks, not evidence of measured acquisition. The scope and references are in [the review report](../docs/pedagogy-b1-routines-plans.md). Synthetic speech input is inspected with an instrumented speech API; pronunciation on an actual iPhone remains a device check.
+
+
+## Backup restoration
+
+```sh
+node tests/backup-restore.cjs
+```
+
+Exercises new versioned and historical raw JSON copies through the file picker and confirmation screen. Checks full populated state (including listening/conversation/news drafts, SRS, notebook and writing), preview/cancel/focus, the single automatic previous-state copy, download and reset, old-content migration, malformed/unsafe/oversized files, asynchronous file selection, quota/read failures, stale changes, corrupt original bytes and pending writing drafts. Tests use disposable profiles and synthetic data; no learner backup is uploaded or modified.
+
+See [backup usage and design](../docs/backup-restore.md) for replacement behavior and limitations. Chromium mobile viewports are checked; an actual iPhone/Safari file-picker and Files download check is still a device validation.
