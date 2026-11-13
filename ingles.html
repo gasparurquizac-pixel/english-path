@@ -1794,13 +1794,18 @@ const list=vocabulary[level];
 for(let i=0;i<list.length;i++){
 const [word,es,en,example,topic]=list[i];
 const a=list[(i+11)%list.length],b=list[(i+23)%list.length];
-const note=`${word}: ${es}. ${example.replace('___',word)}`;
+const sentence=example.replace('___',word),note=`${word}: ${es}. ${sentence}`;
+const recognition=make(`Escuchá y elegí la palabra que oís. · ${topic}`,word,a[0],b[0],note,topic,'',word);
+// Keep the original option order/key so existing records retain their meaning.
+const meaning=make(`Escuchá y elegí el significado en español. · ${topic}`,es,a[1],b[1],note,topic,'',sentence);
+meaning[0]=`Escuchá la oración. ¿Qué significa «${word}» en este contexto? · ${topic}`;
+recognition[5].vocabulary={kind:'recognition',term:word,meaning:es,example:sentence};
+meaning[5].vocabulary={kind:'meaning',term:word,meaning:es,example:sentence};
 data[level]['Vocabulario'].push(
 make(`¿Qué significa «${word}»?`,es,a[1],b[1],note,topic),
 make(`Choose the word: ${en}.`,word,a[0],b[0],note,topic),
 make(`Completá con la palabra que significa «${es}»: ${example}`,word,a[0],b[0],note,topic),
-make(`Escuchá y elegí la palabra que oís. · ${topic}`,word,a[0],b[0],note,topic,'',word),
-make(`Escuchá y elegí el significado en español. · ${topic}`,es,a[1],b[1],note,topic,'',word)
+recognition,meaning
 );
 }
 }
@@ -2143,7 +2148,7 @@ if(![5,10,20].includes(Number(state.preferences.size)))state.preferences.size=10
 let chosen=null;
 const randomise=array=>{for(let i=array.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[array[i],array[j]]=[array[j],array[i]]}return array};
 const style=document.createElement('style');
-style.textContent=`.ep-controls{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin:20px 0}.ep-controls label{display:block;font-size:13px}.ep-controls select{display:block;width:100%;margin-top:7px;white-space:normal;background:white;color:#203d34}.ep-buttons{display:flex;gap:10px;flex-wrap:wrap}.ep-muted{font-size:13px;color:#63766a}.ep-badge{display:inline-block;padding:6px 10px;background:#edf2e6;border-radius:8px;font-size:12px}.ep-explain{line-height:1.8}.ep-error{background:#fff1e8;padding:16px;border-radius:10px}.ep-topic-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ep-topic{border:1px solid #dce3d5;border-radius:12px;padding:14px}.ep-topic b{font-size:13px}.ep-topic p{font-size:12px;margin-bottom:0}.ep-back{margin-bottom:18px}.ep-q{font-size:23px;overflow-wrap:anywhere}.reading{white-space:pre-wrap}.options button{min-height:48px}#feedback:empty{display:none}@media(max-width:560px){.ep-controls,.ep-topic-grid{grid-template-columns:1fr}.ep-q{font-size:21px}.ep-buttons button{width:100%}}`;
+style.textContent=`.ep-controls{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin:20px 0}.ep-controls label{display:block;font-size:13px}.ep-controls select{display:block;width:100%;margin-top:7px;white-space:normal;background:white;color:#203d34}.ep-buttons{display:flex;gap:10px;flex-wrap:wrap}.ep-muted{font-size:13px;color:#63766a}.ep-badge{display:inline-block;padding:6px 10px;background:#edf2e6;border-radius:8px;font-size:12px}.ep-explain{line-height:1.8}.ep-error{background:#fff1e8;padding:16px;border-radius:10px}.ep-topic-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ep-topic{border:1px solid #dce3d5;border-radius:12px;padding:14px}.ep-topic b{font-size:13px}.ep-topic p{font-size:12px;margin-bottom:0}.ep-back{margin-bottom:18px}.ep-q{font-size:23px;overflow-wrap:anywhere}.reading{white-space:pre-wrap}.options button{min-height:48px}#feedback:empty{display:none}.vocab-audio-feedback p{line-height:1.65}.vocab-answer-label{display:block;font-size:14px}.vocab-audio-feedback #vocab-correct-answer strong,.vocab-heard-line strong{font-size:20px;display:block}.vocab-example-label{font-size:13px;margin-bottom:4px}.vocab-audio-feedback #vocab-example{margin-top:0}.vocab-audio-actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.vocab-audio-actions button{min-height:44px;font-size:14px}.vocab-explanation{margin-top:12px}.vocab-target{background:#fff0ac;color:#203d34;border-radius:3px;padding:1px 0}html[data-theme="dark"] .vocab-target{background:#47623b;color:#f4ffeb}@media(max-width:560px){.ep-controls,.ep-topic-grid{grid-template-columns:1fr}.ep-q{font-size:21px}.ep-buttons button{width:100%}}`;
 document.head.appendChild(style);
 function levelStats(l){return types.reduce((r,t)=>({done:r.done+done(l,t),known:r.known+known(l,t),wrong:r.wrong+wrong(l,t),total:r.total+data[l][t].length}),{done:0,known:0,wrong:0,total:0})}
 home=function(){
@@ -2189,11 +2194,27 @@ if(!ids.length)return;
 session={level:state.level,type:chosen.type,ids:ids.slice(0,state.preferences.size),index:0,score:0,answered:false};
 question();
 }
+function vocabularyAudio(q){
+ const v=q[5]?.vocabulary,audio=q[5]?.audio;
+ if(!v||!['recognition','meaning'].includes(v.kind)||![v.term,v.meaning,v.example].every(x=>typeof x==='string'&&x.trim())||v.example.includes('___'))return null;
+ if(audio!==(v.kind==='recognition'?v.term:v.example)||q[1][q[2]]!==(v.kind==='recognition'?v.term:v.meaning)||!v.example.toLowerCase().includes(v.term.toLowerCase()))return null;
+ return v;
+}
+function vocabularyExample(text,term){
+ const at=text.toLowerCase().indexOf(term.toLowerCase());
+ return at<0?esc(text):esc(text.slice(0,at))+'<mark class="vocab-target">'+esc(text.slice(at,at+term.length))+'</mark>'+esc(text.slice(at+term.length));
+}
+function vocabularyFeedback(q,choice){
+ const v=vocabularyAudio(q),ok=choice===q[2],expected=q[1][q[2]],audio=q[5].audio;
+ const label=v?.kind==='recognition'?'Palabra o expresión correcta (inglés)':v?.kind==='meaning'?'Significado correcto (español)':'Respuesta correcta';
+ return `<div class="feedback ep-explain vocab-audio-feedback"><b>${ok?'✓ Tu respuesta es correcta.':'✗ Tu respuesta es incorrecta.'}</b>${v?.kind==='meaning'?`<p class="vocab-heard-line">Palabra o expresión del audio: <strong id="vocab-heard" lang="en">${esc(v.term)}</strong></p>`:''}<p id="vocab-correct-answer"><span class="vocab-answer-label">${label}</span><strong ${v?.kind==='recognition'?'id="vocab-heard" ':''}lang="${v?.kind==='meaning'?'es':'en'}">${esc(expected)}</strong></p>${v?.kind==='recognition'?`<p>Significado (español): <span id="vocab-meaning" lang="es">${esc(v.meaning)}</span></p>`:''}${!ok?`<p id="vocab-selected-answer">Tu elección: <span lang="${v?.kind==='meaning'?'es':'en'}">${esc(q[1][choice])}</span></p>`:''}${v?`<p class="vocab-example-label">${v.kind==='meaning'?'Oración del audio':'Ejemplo en inglés'}:</p><p id="vocab-example" lang="en">${vocabularyExample(v.example,v.term)}</p>`:`<details class="vocab-explanation"><summary>Revisar el texto del audio</summary><p id="vocab-audio-transcript" lang="en">${esc(audio)}</p></details>`}<div class="vocab-audio-actions"><button type="button" id="vocab-replay-audio">${v?.kind==='recognition'?'♫ Escuchar palabra':v?.kind==='meaning'?'♫ Escuchar oración':'♫ Repetir mensaje'}</button>${v?.kind==='recognition'?'<button type="button" id="vocab-play-example">♫ Escuchar ejemplo</button>':''}</div><details class="vocab-explanation"><summary>Ver explicación en español</summary><p lang="es">${esc(q[3])}</p></details></div>`;
+}
 question=function(){
 stopVoice();const s=session,q=data[s.level][s.type][s.ids[s.index]];s.answered=false;
 window.klevyVariety.remember(s.level,s.type,s.ids[s.index]);
-const audio=q[5]?.audio||(s.type==='Escucha'?q[4]:'');
-app.innerHTML=`<section class="panel"><small>${s.level} · ${esc(s.type)} · ${s.index+1} DE ${s.ids.length}</small><div class="progress" style="margin:15px 0"><div style="width:${s.index/s.ids.length*100}%"></div></div><span class="ep-badge">${esc(topic(q))}</span>${s.type==='Lectura'?`<p class="reading" lang="en">${esc(q[4])}</p>`:''}${audio?`<p>Escuchá y elegí la respuesta. <span class="ep-muted">Voz sintética.</span></p><button class="primary" id="listen">♫ Reproducir audio</button><details style="margin-top:16px"><summary>Ver transcripción</summary><p lang="en">${esc(audio)}</p></details>`:''}<h2 class="ep-q">${esc(q[0])}</h2><div class="options">${q[1].map((a,i)=>`<button data-answer="${i}">${String.fromCharCode(65+i)}. ${esc(a)}</button>`).join('')}</div><div id="feedback" aria-live="polite"></div><button id="leave">Volver a los temas</button></section>`;
+const audio=q[5]?.audio||(s.type==='Escucha'?q[4]:''),vocab=s.type==='Vocabulario'&&!!audio,cue=vocab?vocabularyAudio(q):null;
+const instruction=cue?.kind==='recognition'?'Elegí cómo se escribe la palabra o expresión que escuchás en inglés.':cue?.kind==='meaning'?'Elegí su significado en español según la oración.':'Escuchá el mensaje en inglés y respondé la pregunta.';
+app.innerHTML=`<section class="panel"><small>${s.level} · ${esc(s.type)} · ${s.index+1} DE ${s.ids.length}</small><div class="progress" style="margin:15px 0"><div style="width:${s.index/s.ids.length*100}%"></div></div><span class="ep-badge">${esc(topic(q))}</span>${s.type==='Lectura'?`<p class="reading" lang="en">${esc(q[4])}</p>`:''}${vocab?`<h2 class="ep-q">${esc(q[0])}</h2>`:''}${audio?`<p ${vocab?'id="vocab-audio-instruction"':''}>${vocab?instruction:'Escuchá y elegí la respuesta.'} <span class="ep-muted">Voz sintética.</span></p><button class="primary" id="listen">${cue?.kind==='recognition'?'♫ Escuchar palabra':cue?.kind==='meaning'?'♫ Escuchar oración':'♫ Reproducir audio'}</button><details style="margin-top:16px"><summary>Ver transcripción</summary><p lang="en">${esc(audio)}</p></details>`:''}${!vocab?`<h2 class="ep-q">${esc(q[0])}</h2>`:''}<div class="options">${q[1].map((a,i)=>`<button data-answer="${i}">${String.fromCharCode(65+i)}. ${esc(a)}</button>`).join('')}</div><div id="feedback" aria-live="polite"></div><button id="leave">Volver a los temas</button></section>`;
 if(audio)document.querySelector('#listen').onclick=()=>speak(audio);
 document.querySelector('#leave').onclick=()=>choose(s.type,chosen?.topic||'all',chosen?.mode||'mixed');
 app.querySelectorAll('[data-answer]').forEach(b=>b.onclick=()=>answer(Number(b.dataset.answer)));
@@ -2205,7 +2226,10 @@ state.answers++;if(ok){state.correct++;s.score++}
 const k=exerciseKey(s.level,s.type,id),old=state.practice[k]||{};
 state.practice[k]={...old,correct:ok,attempts:(old.attempts||0)+1,lastAt:Date.now()};save();
 app.querySelectorAll('[data-answer]').forEach(b=>{b.disabled=true;const n=Number(b.dataset.answer);if(n===q[2])b.classList.add('correct');else if(n===i)b.classList.add('wrong')});
-document.querySelector('#feedback').innerHTML=`<div class="feedback ep-explain"><b>${ok?'¡Muy bien!':'Vamos a aprender de este error.'}</b><p>Respuesta correcta: <strong>${esc(q[1][q[2]])}</strong></p>${esc(q[3])}</div><button class="primary" id="next">${s.index<s.ids.length-1?'Siguiente pregunta →':'Ver resultado →'}</button><br><br>`;
+const isVocabAudio=s.type==='Vocabulario'&&!!q[5]?.audio;
+const feedback=isVocabAudio?vocabularyFeedback(q,i):`<div class="feedback ep-explain"><b>${ok?'¡Muy bien!':'Vamos a aprender de este error.'}</b><p>Respuesta correcta: <strong>${esc(q[1][q[2]])}</strong></p>${esc(q[3])}</div>`;
+document.querySelector('#feedback').innerHTML=`${feedback}<button class="primary" id="next">${s.index<s.ids.length-1?'Siguiente pregunta →':'Ver resultado →'}</button><br><br>`;
+if(isVocabAudio){document.querySelector('#vocab-replay-audio').onclick=()=>speak(q[5].audio);const example=document.querySelector('#vocab-play-example');if(example)example.onclick=()=>speak(vocabularyAudio(q).example)}
 document.querySelector('#next').onclick=()=>{if(s.index<s.ids.length-1){s.index++;question()}else finish()};
 };
 finish=function(){
@@ -2239,7 +2263,7 @@ state.practiceArchive=state.practiceArchive||{};
 const changed=new Set();
 for(const p of patches){
  const type=p.type||'Gramática',previous=data[p.level][type][p.index],key=p.level+':'+type+':'+p.index,meta={...previous[5],topic:p.topic,contentRevision:revision};
- if(Object.prototype.hasOwnProperty.call(p,'audio'))meta.audio=p.audio;
+ if(Object.prototype.hasOwnProperty.call(p,'audio')){meta.audio=p.audio;delete meta.vocabulary;}
  data[p.level][type][p.index]=[p.prompt,p.options,p.correct,p.why,Object.prototype.hasOwnProperty.call(p,'text')?p.text:undefined,meta];
  if(Number(state.contentRevisions[key]||1)>=revision)continue;
  if(state.practice[key]){

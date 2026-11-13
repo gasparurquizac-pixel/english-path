@@ -94,3 +94,13 @@ node tests/quantity.cjs
 Checks the revised unit, 15 independently specified meaning cases, five distinct synthetic-listening situations, speech input and removal of obsolete word audio, dedicated oral/writing flows, unchanged earlier drafts and score/SRS records, archived prior quick-check selections, unit-linked daily plan migration (including plans whose questions come from another unit), reload, versioned backup validation and mobile layout. Existing writing drafts retain their daily-plan priority.
 
 The full editorial scope and limitations are in [the quantities review](../docs/pedagogy-b1-quantity.md). Tests do not measure learner acquisition or certify B1. Actual iPhone speech/microphone/file handling remains a device check.
+
+## Vocabulary audio instructions and feedback
+
+```sh
+node tests/vocabulary-audio.cjs
+```
+
+Exercises every one of the 125 vocabulary audio items with correct and incorrect selections (250 rendered cases), distinguishing English recognition from contextual Spanish meaning. Checks explicit target words, completed English examples, speech API payloads, visible English/Spanish feedback, replay without regrading, keyboard use, metadata fallback, persistent score/SRS/drafts, export and light/dark layout at 320px. Independent cases include staff turnover and headache.
+
+See [the vocabulary audio fix](../docs/vocabulary-audio-feedback.md) for scope and compatibility. Speech API input is instrumented; actual voice playback and pronunciation on an iPhone remain device checks.
